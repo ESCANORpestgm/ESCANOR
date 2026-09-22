@@ -9,6 +9,8 @@ let playInterval;
 let leafletMap;
 let layerGroup;
 let drilldownChart   = null;
+const DIRECTION_ZOOM_MAX = 7;
+
 
 function uncertaintyColor(ratio) {
     if (ratio < 0.3)  return C.good;
@@ -82,6 +84,7 @@ async function initTimelapseMap() {
 
         document.getElementById('time-slider').max = timelapseFrames.length - 1;
         renderFrame(0);
+        leafletMap.on('zoomend', () => renderFrame(currentFrameIdx));
 
         document.getElementById('time-slider').addEventListener('input', e => renderFrame(parseInt(e.target.value)));
         document.getElementById('play-btn').addEventListener('click', () => {
@@ -173,22 +176,28 @@ function renderFrame(idx) {
         `${frame.national_total_mw.toFixed(1)} MW`;
 
     layerGroup.clearLayers();
+    if (leafletMap.getZoom() <= DIRECTION_ZOOM_MAX) {
+        renderDirectionMarkers(frame);
+    } else {
+        renderDistrictMarkers(frame);
+    }
+}
+
+function markerStyle(p50, utilization, uncertaintyRatio) {
+    return {
+        color: uncertaintyColor(uncertaintyRatio || 0),
+        weight: 2.5,
+        fillColor: C.primary,
+        fillOpacity: Math.min(0.95, Math.max(0.3, (utilization || 0) / 100)),
+        radius: Math.max(7, Math.sqrt(Math.max(p50, 0)) * 4.2),
+    };
+}
+
+
+function renderDistrictMarkers(frame) {
     frame.governorates.forEach(g => {
-        if (!g.lat || !g.lon) return;
-        if (g.p50 <= 0.03) return; // skip night zeros
-
-        const radius  = Math.max(5, Math.sqrt(g.p50) * 4.2);
-        const opacity = Math.min(0.95, Math.max(0.3, g.utilization_pct / 100));
-        const uncColor = uncertaintyColor(g.uncertainty_ratio || 0);
-
-        const marker = L.circleMarker([g.lat, g.lon], {
-            color:       uncColor,
-            weight:      2.5,
-            fillColor:   C.primary,
-            fillOpacity: opacity,
-            radius:      radius,
-        });
-
+        if (!g.lat || !g.lon || g.p50 <= 0.03) return;
+        const marker = L.circleMarker([g.lat, g.lon], markerStyle(g.p50, g.utilization_pct, g.uncertainty_ratio));
         marker.bindPopup(
             `<strong>${g.governorate}</strong><br>` +
             `Direction: ${g.direction || 'STEG'}<br>` +
@@ -197,8 +206,41 @@ function renderFrame(idx) {
             `☁️ ${g.cloud_cover_pct}% nuages | ☀️ ${Math.round(g.ghi_wm2 || 0)} W/m²<br>` +
             `<small style="color:var(--accent-primary);">Cliquez pour détails météo & prévision</small>`
         );
-
         marker.on('click', () => openMapDrilldown(g.governorate, g));
+        marker.addTo(layerGroup);
+    });
+}
+
+function renderDirectionMarkers(frame) {
+    const directions = {};
+    frame.governorates.forEach(g => {
+        if (!g.lat || !g.lon || g.p50 <= 0.03) return;
+        const direction = g.direction || 'STEG';
+        const item = directions[direction] ||= {
+            lat: 0, lon: 0, count: 0, p10: 0, p50: 0, p90: 0, capacity: 0,
+        };
+        item.lat += g.lat;
+        item.lon += g.lon;
+        item.count += 1;
+        item.p10 += g.p10 || 0;
+        item.p50 += g.p50 || 0;
+        item.p90 += g.p90 || 0;
+        item.capacity += Number(g.cap || 0);
+    });
+
+    Object.entries(directions).forEach(([direction, item]) => {
+        item.lat /= item.count;
+        item.lon /= item.count;
+        const uncertainty = item.p90 - item.p10;
+        const utilization = item.capacity ? 100 * item.p50 / item.capacity : 0;
+        const marker = L.circleMarker([item.lat, item.lon], markerStyle(item.p50, utilization, uncertainty / Math.max(item.p50, 0.01)));
+        marker.bindPopup(
+            `<strong>${direction}</strong><br>` +
+            `${item.count} districts<br>` +
+            `P50: <strong>${item.p50.toFixed(2)} MW</strong><br>` +
+            `Uncertainty: ±${(uncertainty / 2).toFixed(2)} MW<br>` +
+            `<small>Direction-level statistics only</small>`
+        );
         marker.addTo(layerGroup);
     });
 }
@@ -246,7 +288,7 @@ async function openMapDrilldown(districtName, currentData) {
             options: {
                 responsive: true, maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
-                plugins: { legend: { display: false }, tooltip: { backgroundColor: C.bg, titleColor: C.text, bodyColor: C.muted, borderColor: C.border, borderWidth: 1 } },
+                plugins: { legend: { display: false }, tooltip: { backgroundColor: C.bg, titleColor: C.text, bodyColor: C.muted, borderColor: C.border, borderWidth: 1 }, zoom: _chartZoom },
                 scales: {
                     x: { grid: { display: false }, ticks: { maxTicksLimit: 6, font: { size: 10 } } },
                     y: { grid: { color: 'rgba(230,228,221,0.5)' }, border: { display: false }, beginAtZero: true, ticks: { font: { size: 10 } } }

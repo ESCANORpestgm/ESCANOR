@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0/dist/chartjs-plugin-zoom.min.js"></script>
     <style>
         .map-layout { display: flex; gap: 1.5rem; }
         .map-main   { flex: 1; min-width: 0; }
@@ -159,7 +161,7 @@
     <main class="main-content">
         <header class="page-header">
             <h2 data-i18n="map-title">Spatial Timelapse Map</h2>
-            <p data-i18n="map-sub">Interactive spatial map of all 50 STEG commercial districts. Click any circle to drill down into weather and 72-hour forecast.</p>
+            <p data-i18n="map-sub">Global statistics for the 7 STEG Directions de Distribution. Zoom in to display all 50 commercial districts and their forecasts.</p>
         </header>
 
         <section class="panel" style="padding: 1rem;">
@@ -169,19 +171,19 @@
                     <div id="map"></div>
 
                     <div class="slider-container">
-                        <button class="play-btn" id="play-btn">▶ Play</button>
+                        <button class="play-btn" id="play-btn" data-i18n="play">▶ Play</button>
                         <input type="range" id="time-slider" min="0" max="47" value="0">
                         <div style="min-width:160px;text-align:right;font-family:var(--font-mono);font-size:0.88rem;" id="time-display">--:--</div>
                     </div>
 
                     <div class="flex-row mt-1" style="font-size:0.82rem;color:var(--text-secondary);">
-                        <span>Agg.: <strong id="map-nat-total" style="color:var(--text-primary);">0 MW</strong></span>
+                        <span><span data-i18n="aggregate">Agg.:</span> <strong id="map-nat-total" style="color:var(--text-primary);">0 MW</strong></span>
                         <span class="spacer"></span>
                         <!-- Uncertainty legend -->
                         <div class="unc-legend">
-                            <span class="unc-legend-item"><span class="unc-dot low"></span> Faible incertitude</span>
-                            <span class="unc-legend-item"><span class="unc-dot mid"></span> Moyenne</span>
-                            <span class="unc-legend-item"><span class="unc-dot high"></span> Élevée</span>
+                            <span class="unc-legend-item"><span class="unc-dot low"></span> <span data-i18n="low-uncertainty">Faible incertitude</span></span>
+                            <span class="unc-legend-item"><span class="unc-dot mid"></span> <span data-i18n="medium-uncertainty">Moyenne</span></span>
+                            <span class="unc-legend-item"><span class="unc-dot high"></span> <span data-i18n="high-uncertainty">Élevée</span></span>
                         </div>
                     </div>
                 </div>

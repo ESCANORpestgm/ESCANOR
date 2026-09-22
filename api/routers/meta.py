@@ -23,7 +23,7 @@ def root():
             "/forecast/district/{district}", "/forecast/districts",
             "/forecast/governorate/{governorate}", "/forecast/map", "/forecast/timelapse",
             "/forecast/refresh", "/export/forecast", "/metering/push", "/models/retrain",
-            "/retrain/status", "/alerts", "/metrics", "/history/national",
+            "/retrain/status", "/alerts", "/metrics", "/history/national", "/history/rooftop",
             "/reports/prosol/summary", "/reports/prosol/snapshot", "/reports/prosol/html",
             "/reports/prosol/history", "/evaluations/history", "/models/production",
             "/models/versions", "/models/training-runs", "/displacement/summary",

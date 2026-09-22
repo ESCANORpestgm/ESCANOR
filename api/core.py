@@ -74,7 +74,7 @@ def build_forecast(horizon_days: int = 3) -> pd.DataFrame:
         now = pd.Timestamp.now(tz="Africa/Tunis").tz_localize(None).floor("h")
         if _state["cache"] is not None and _state["cache_time"] is not None:
             age_min = (now - _state["cache_time"]).total_seconds() / 60
-            if age_min < 29:
+            if age_min < 14:
                 return _state["cache"]
 
         try:
@@ -131,6 +131,14 @@ def scheduled_refresh() -> None:
             print(f"[scheduler] forecast refresh failed: {error}")
 
 
+def scheduled_retrain() -> None:
+    try:
+        from api.routers.learning import scheduled_retrain as run_scheduled_retrain
+        run_scheduled_retrain()
+    except Exception as error:
+        print(f"[scheduler] hourly retraining failed: {error}")
+
+
 @asynccontextmanager
 async def lifespan(app: Any):
     try:
@@ -141,10 +149,11 @@ async def lifespan(app: Any):
     try:
         from apscheduler.schedulers.background import BackgroundScheduler
         scheduler = BackgroundScheduler()
-        scheduler.add_job(scheduled_refresh, "interval", minutes=30, id="forecast_refresh")
+        scheduler.add_job(scheduled_refresh, "interval", minutes=15, id="forecast_refresh", coalesce=True, max_instances=1)
+        scheduler.add_job(scheduled_retrain, "interval", days=1, id="daily_retrain", coalesce=True, max_instances=1)
         scheduler.start()
         app.state.scheduler = scheduler
-        print("[APScheduler] background forecast refresh every 30 min → started")
+        print("[APScheduler] forecast refresh every 15 min and validated-model retraining every day → started")
     except ImportError:
         app.state.scheduler = None
         print("[APScheduler] not installed — background refresh disabled")

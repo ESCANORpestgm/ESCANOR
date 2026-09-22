@@ -29,9 +29,11 @@ const C = {
     bg:      '#FFFFFF',
     border:  '#E6E4DD',
 };
-Chart.defaults.color         = C.muted;
-Chart.defaults.font.family   = "'Inter', -apple-system, sans-serif";
-Chart.defaults.font.size     = 12;
+if (typeof Chart !== 'undefined') {
+    Chart.defaults.color       = C.muted;
+    Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
+    Chart.defaults.font.size   = 12;
+}
 
 // ── i18n ────────────────────────────────────────────────────────────────────
 const I18N = {
@@ -92,6 +94,39 @@ const I18N = {
         'peak-median':        'P50 (Median)',
         'peak-optimistic':    'P90 (Optimistic)',
         'peak-hour':          'J+1 Peak Hour',
+        'status-connecting':  'Connecting…',
+        'status-cap':         'Capacity: -- MWc',
+        'prosol-history-title': 'Prosol Report History',
+        'prosol-history-sub': 'Immutable monthly rooftop-PV snapshots aligned with the official STEG report structure.',
+        'report-snapshot':     'Report snapshot',
+        'loading':             'Loading…',
+        'national-metrics':    'National metrics',
+        'installations-direction': 'Installations by Direction',
+        'district-snapshot':   'District snapshot',
+        'pending-dossiers':    'Pending dossiers',
+        'add-installations':   'Add new rooftop PV installations',
+        'select-district-option': 'Select district…',
+        'new-pvs':             'New PVs',
+        'capacity-optional':   'Capacity (kWc, optional)',
+        'add-installations-button': 'Add installations',
+        'new-installed-pvs':   'New installed PVs by district',
+        'download-csv':        'Download CSV',
+        'official-prosol-note': 'Official Prosol installation counts for the selected snapshot; aggregated district data, not individual rooftop records.',
+        'installation-sizes': 'Installation sizes (kWc)',
+        'saved-evaluations':   'Saved Forecast Evaluations',
+        'synthetic-validation': 'Synthetic validation only',
+                'pvgis-modeled':      'PVGIS modeled data',
+        'observations':        'Observations',
+        'forecast-refresh':    'Forecast refresh',
+        'candidate-training':  'Candidate training',
+        'daily':               'Daily',
+        'every-15-minutes':    'Every 15 minutes',
+        'current-source':      'Current source',
+        'continuous-status':   'Continuous learning: daily candidate training from the latest validated rooftop measurement snapshot; promotion only when candidate validation improves.',
+        'play': 'Play', 'aggregate': 'Aggregate:', 'low-uncertainty': 'Low uncertainty', 'medium-uncertainty': 'Medium', 'high-uncertainty': 'High',
+        'refresh-alerts': 'Refresh Alerts', 'uncertainty-threshold': 'Uncertainty threshold (MW)', 'ramp-threshold': 'Ramp-down threshold (%)',
+        'all-directions': 'All Directions', 'commercial-district': 'Commercial District', 'governorate': 'Governorate',
+        'installed-capacity': 'Installed Capacity (MWc)', 'pending-dossiers-label': 'Pending dossiers', 'execution-rate': 'Execution rate', 'district-label': 'District', 'month-label': 'Month', 'ytd-label': 'YTD', 'since-start-label': 'Since start', 'share-label': 'Share', 'official-month-label': 'Official month', 'added-live-label': 'Added live', 'current-ytd-label': 'Current YTD',
     },
     fr: {
         'brand-sub':          'Prévision PV STEG',
@@ -150,6 +185,39 @@ const I18N = {
         'peak-median':        'P50 (Médian)',
         'peak-optimistic':    'P90 (Optimiste)',
         'peak-hour':          'Heure de pic J+1',
+        'status-connecting':  'Connexion…',
+        'status-cap':         'Capacité : -- MWc',
+        'prosol-history-title': 'Historique des rapports Prosol',
+        'prosol-history-sub': 'Instantanés mensuels immuables du photovoltaïque résidentiel selon la structure officielle STEG.',
+        'report-snapshot':     'Instantané du rapport',
+        'loading':             'Chargement…',
+        'national-metrics':    'Indicateurs nationaux',
+        'installations-direction': 'Installations par Direction',
+        'district-snapshot':   'Situation par district',
+        'pending-dossiers':    'Dossiers en instance',
+        'add-installations':   'Ajouter de nouvelles installations PV',
+        'select-district-option': 'Sélectionnez un district…',
+        'new-pvs':             'Nouveaux PV',
+        'capacity-optional':   'Puissance (kWc, facultatif)',
+        'add-installations-button': 'Ajouter les installations',
+        'new-installed-pvs':   'Nouvelles installations PV par district',
+        'download-csv':        'Télécharger le CSV',
+        'official-prosol-note': 'Comptages officiels Prosol pour l’instantané sélectionné ; données agrégées par district, sans systèmes individuels.',
+        'installation-sizes': 'Puissances des installations (kWc)',
+        'saved-evaluations':   'Évaluations de prévisions enregistrées',
+        'synthetic-validation': 'Validation synthétique uniquement',
+                'pvgis-modeled':      'Données modélisées PVGIS',
+        'observations':        'Observations',
+        'forecast-refresh':    'Actualisation des prévisions',
+        'candidate-training':  'Entraînement candidat',
+        'daily':               'Quotidien',
+        'every-15-minutes':    'Toutes les 15 minutes',
+        'current-source':      'Source actuelle',
+        'continuous-status':   'Apprentissage continu : entraînement quotidien à partir du dernier instantané rooftop validé ; promotion uniquement si la validation progresse.',
+        'play': 'Lecture', 'aggregate': 'Total :', 'low-uncertainty': 'Faible incertitude', 'medium-uncertainty': 'Moyenne', 'high-uncertainty': 'Élevée',
+        'refresh-alerts': 'Actualiser les alertes', 'uncertainty-threshold': 'Seuil d’incertitude (MW)', 'ramp-threshold': 'Seuil de baisse (%)',
+        'all-directions': 'Toutes les Directions', 'commercial-district': 'District commercial', 'governorate': 'Gouvernorat',
+        'installed-capacity': 'Puissance installée (MWc)', 'pending-dossiers-label': 'Dossiers en instance', 'execution-rate': 'Taux de réalisation', 'district-label': 'District', 'month-label': 'Mois', 'ytd-label': 'Cumul annuel', 'since-start-label': 'Depuis le début', 'share-label': 'Part', 'official-month-label': 'Mois officiel', 'added-live-label': 'Ajout en direct', 'current-ytd-label': 'Cumul actuel',
     },
     ar: {
         'brand-sub':          'توقعات الطاقة الشمسية — الستاغ',
@@ -208,6 +276,39 @@ const I18N = {
         'peak-median':        'P50 (متوسط)',
         'peak-optimistic':    'P90 (متفائل)',
         'peak-hour':          'ساعة الذروة غ+1',
+        'status-connecting':  'جار الاتصال…',
+        'status-cap':         'القدرة: -- ميغاواط',
+        'prosol-history-title': 'سجل تقارير بروسول',
+        'prosol-history-sub': 'لقطات شهرية غير قابلة للتغيير للطاقة الشمسية وفق الهيكل الرسمي لتقارير الستاغ.',
+        'report-snapshot':     'لقطة التقرير',
+        'loading':             'جار التحميل…',
+        'national-metrics':    'المؤشرات الوطنية',
+        'installations-direction': 'المنظومات حسب إدارة التوزيع',
+        'district-snapshot':   'ملخص الإقليم',
+        'pending-dossiers':    'الملفات العالقة',
+        'add-installations':   'إضافة منظومات شمسية جديدة',
+        'select-district-option': 'اختر إقليماً…',
+        'new-pvs':             'المنظومات الجديدة',
+        'capacity-optional':   'القدرة (kWc، اختياري)',
+        'add-installations-button': 'إضافة المنظومات',
+        'new-installed-pvs':   'المنظومات الشمسية الجديدة حسب الإقليم',
+        'download-csv':        'تنزيل CSV',
+        'official-prosol-note': 'أعداد المنظومات الرسمية من بروسول للّقطة المختارة؛ بيانات مجمعة حسب الإقليم وليست منظومات فردية.',
+        'installation-sizes': 'أحجام المنظومات (kWc)',
+        'saved-evaluations':   'تقييمات التوقعات المحفوظة',
+        'synthetic-validation': 'تحقق اصطناعي فقط',
+                'pvgis-modeled':      'بيانات نمذجة PVGIS',
+        'observations':        'القياسات',
+        'forecast-refresh':    'تحديث التوقعات',
+        'candidate-training':  'تدريب النموذج المرشح',
+        'daily':               'يومياً',
+        'every-15-minutes':    'كل 15 دقيقة',
+        'current-source':      'المصدر الحالي',
+        'continuous-status':   'تعلم مستمر: تدريب يومي اعتماداً على أحدث لقطة قياسات شمسية مصادق عليها؛ لا تتم الترقية إلا عند تحسن التحقق.',
+        'play': 'تشغيل', 'aggregate': 'الإجمالي:', 'low-uncertainty': 'عدم يقين منخفض', 'medium-uncertainty': 'متوسط', 'high-uncertainty': 'مرتفع',
+        'refresh-alerts': 'تحديث التنبيهات', 'uncertainty-threshold': 'عتبة عدم اليقين (ميغاواط)', 'ramp-threshold': 'عتبة الانخفاض (%)',
+        'all-directions': 'كل إدارات التوزيع', 'commercial-district': 'الإقليم التجاري', 'governorate': 'الولاية',
+        'installed-capacity': 'القدرة المركبة (ميغاواط)', 'pending-dossiers-label': 'الملفات العالقة', 'execution-rate': 'نسبة الإنجاز', 'district-label': 'الإقليم', 'month-label': 'الشهر', 'ytd-label': 'التراكمي السنوي', 'since-start-label': 'منذ البداية', 'share-label': 'الحصة', 'official-month-label': 'الشهر الرسمي', 'added-live-label': 'الإضافة المباشرة', 'current-ytd-label': 'التراكمي الحالي',
     }
 };
 
@@ -285,12 +386,18 @@ async function applyI18n(lang) {
 }
 
 // ── Chart Helper ────────────────────────────────────────────────────────────
+if (typeof zoomPlugin !== 'undefined' && typeof Chart !== 'undefined') Chart.register(zoomPlugin);
+const _chartZoom = {
+    pan: { enabled: true, mode: 'x' },
+    zoom: { wheel: { enabled: true }, pinch: { enabled: true }, drag: { enabled: false }, mode: 'x' },
+};
 const _chartDefaults = {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
     plugins: {
         legend: { display: false },
+        zoom: _chartZoom,
         tooltip: {
             backgroundColor: C.bg,
             titleColor: C.text,
@@ -333,12 +440,26 @@ function makeChart(ctx, extraConfig = {}) {
 function p10p50p90Datasets(labels, p10, p50, p90, customColor = C.primary, customFill = C.fill) {
     return [
         {
-            label: 'P90 (Optimistic)',
+            label: 'P90 (Upper bound)',
             data: p90,
-            borderColor: 'transparent',
+            borderColor: 'rgba(217, 160, 91, 0.9)',
             backgroundColor: customFill,
-            fill: '+1',
+            borderWidth: 1.2,
+            borderDash: [4, 3],
+            fill: false,
             pointRadius: 0,
+            tension: 0.25,
+        },
+        {
+            label: 'P10 (Lower bound)',
+            data: p10,
+            borderColor: 'rgba(217, 160, 91, 0.9)',
+            backgroundColor: customFill,
+            borderWidth: 1.2,
+            borderDash: [4, 3],
+            fill: '-1',
+            pointRadius: 0,
+            tension: 0.25,
         },
         {
             label: 'P50 (Median)',
@@ -348,13 +469,6 @@ function p10p50p90Datasets(labels, p10, p50, p90, customColor = C.primary, custo
             borderWidth: 2.2,
             pointRadius: 0,
             tension: 0.35,
-        },
-        {
-            label: 'P10 (Pessimistic)',
-            data: p10,
-            borderColor: 'transparent',
-            backgroundColor: 'transparent',
-            pointRadius: 0,
         },
     ];
 }
@@ -467,8 +581,15 @@ function setupProsolReportModal() {
     const btnClose = document.getElementById('btnCloseProsolModal');
     const btnDownload = document.getElementById('btnDownloadProsolJson');
     const reportLink = document.getElementById('btn-open-prosol-html');
+    const freshSummaryUrl = () => `${API_BASE}/reports/prosol/summary?_=${Date.now()}`;
+    const freshReportUrl = () => `${API_BASE}/reports/prosol/html?_=${Date.now()}`;
 
-    if (reportLink) reportLink.href = `${API_BASE}/reports/prosol/html`;
+    if (reportLink) {
+        reportLink.href = freshReportUrl();
+        reportLink.addEventListener('click', () => {
+            reportLink.href = freshReportUrl();
+        });
+    }
     if (!btnOpen || !modal) return;
 
     btnOpen.addEventListener('click', async () => {
@@ -476,13 +597,14 @@ function setupProsolReportModal() {
         const previewEl = document.getElementById('modalMetricsPreview');
         if (!previewEl) return;
         try {
-            const res = await fetch(`${API_BASE}/reports/prosol/summary`);
+            const res = await fetch(freshSummaryUrl(), { cache: 'no-store' });
+            if (!res.ok) throw new Error(`Report summary request failed with ${res.status}`);
             const data = await res.json();
             const ind = data.indicators || [];
-            const pInst = ind.find(x => x.id === 2)?.since_2011 || 456.0;
-            const nInst = ind.find(x => x.id === 1)?.since_2011 || 144979;
-            const nPending = data.recap_executions?.pending_current || 5475;
-            const compRate = data.recap_executions?.completion_rate_pct || 74.7;
+            const pInst = ind.find(x => x.id === 2)?.since_2011 ?? 0;
+            const nInst = ind.find(x => x.id === 1)?.since_2011 ?? 0;
+            const nPending = data.recap_executions?.pending_current ?? 0;
+            const compRate = data.recap_executions?.completion_rate_pct ?? 0;
             previewEl.innerHTML = `
                 <div class="preview-stat-box">
                     <div class="val">${pInst.toFixed(1)} MWc</div>
@@ -517,7 +639,8 @@ function setupProsolReportModal() {
     if (btnDownload) {
         btnDownload.addEventListener('click', async () => {
             try {
-                const res = await fetch(`${API_BASE}/reports/prosol/summary`);
+                const res = await fetch(freshSummaryUrl(), { cache: 'no-store' });
+                if (!res.ok) throw new Error(`Report summary request failed with ${res.status}`);
                 const json = await res.json();
                 const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);

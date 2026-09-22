@@ -139,5 +139,7 @@ core report-history and forecast-learning workflow is complete:
 - [ ] Do not include CES metrics in PV training data.
 - [ ] Do not model individual rooftops unless source data requires it.
 - [ ] Treat Prosol reports as monthly capacity and installation snapshots.
-- [ ] Use actual hourly or 15-minute production data for model training.
+- [x] Add a reproducible SolNet-style synthetic rooftop dataset generator.
+- [x] Use the SolNet-style aggregate dataset in the historical dashboard pipeline.
+- [ ] Use actual hourly or 15-minute production data for production model training.
 - [ ] Never overwrite historical forecasts, report snapshots, or raw measurements.

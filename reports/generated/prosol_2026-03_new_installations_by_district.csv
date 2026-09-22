@@ -1,0 +1,51 @@
+report_period,emission_date,district,direction,new_installations_month,new_installations_ytd,live_new_installations,current_new_installations_ytd,installations_since_program_start,new_capacity_mw_month,new_capacity_mw_ytd,source_file,source
+2026-03,11/05/2026,TUNIS VILLE,TUNIS,44.0,83.0,,,1923.0,0.2,0.3,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,ARIANA,TUNIS,111.0,316.0,,,5688.0,0.5,1.2,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,EZZAHRA,TUNIS,200.0,249.0,,,4509.0,0.6,0.8,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,MOUROUJ,TUNIS,39.0,153.0,,,2287.0,0.1,0.5,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,KRAM,TUNIS,107.0,349.0,,,4820.0,0.4,1.3,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,BARDO,TUNIS,59.0,198.0,,,2667.0,0.2,0.7,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,MANNOUBA,TUNIS,97.0,209.0,,,2559.0,0.3,0.7,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,EL MENZAH,TUNIS,60.0,166.0,,,4085.0,0.3,0.7,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,ZAGHOUAN,NORD,28.0,72.0,,,974.0,0.1,0.3,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,BIZERTE,NORD,95.0,196.0,,,3402.0,0.4,0.7,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,MENZEL BOURGUIBA,NORD,9.0,51.0,,,709.0,0.0,0.2,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,NABEUL,NORD,99.0,333.0,,,4344.0,0.4,1.1,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,MENZEL B-ZELFA,NORD,80.0,228.0,,,2688.0,0.3,0.8,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,MENZEL TEMIME,NORD,72.0,207.0,,,2878.0,0.3,0.7,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,HAMMAMET,NORD,133.0,202.0,,,2299.0,0.5,0.7,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,BEJA,NORD OUEST,44.0,109.0,,,4185.0,0.1,0.4,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,JENDOUBA,NORD OUEST,41.0,99.0,,,918.0,0.1,0.3,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,KEF,NORD OUEST,29.0,72.0,,,1361.0,0.1,0.2,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,SILIANA,NORD OUEST,15.0,32.0,,,546.0,0.1,0.1,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,TABARKA,NORD OUEST,12.0,22.0,,,354.0,0.0,0.1,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,SOUSSE,CENTRE,125.0,300.0,,,4633.0,0.5,1.1,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,SOUSSE NORD,CENTRE,82.0,318.0,,,4942.0,0.3,1.1,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,MONASTIR,CENTRE,126.0,368.0,,,5087.0,0.5,1.3,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,MOKNINE,CENTRE,117.0,551.0,,,7242.0,0.4,2.0,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,MAHDIA,CENTRE,109.0,295.0,,,4293.0,0.4,1.0,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,KAIROUAN,CENTRE,33.0,123.0,,,1780.0,0.1,0.4,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,KAIROUAN NORD,CENTRE,8.0,42.0,,,1028.0,0.0,0.1,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,EL JEM,CENTRE,46.0,211.0,,,1672.0,0.1,0.7,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,KASSERINE,SUD OUEST,7.0,40.0,,,320.0,0.0,0.2,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,SIDI-BOUZID,SUD OUEST,27.0,74.0,,,833.0,0.1,0.3,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,GAFSA,SUD OUEST,23.0,90.0,,,1162.0,0.1,0.3,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,METLAOUI,SUD OUEST,8.0,19.0,,,244.0,0.0,0.1,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,TOZEUR,SUD OUEST,3.0,17.0,,,1796.0,0.0,0.1,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,MAKNASSY,SUD OUEST,25.0,48.0,,,181.0,0.1,0.2,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,SFAX VILLE,SFAX,85.0,288.0,,,6301.0,0.3,1.1,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,JBENIANA,SFAX,98.0,237.0,,,2212.0,0.3,0.8,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,SFAX NORD,SFAX,192.0,602.0,,,10112.0,0.7,2.2,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,MAHRES,SFAX,57.0,187.0,,,3121.0,0.2,0.7,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,SFAX SUD,SFAX,158.0,458.0,,,9189.0,0.6,1.7,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,GABES,SUD,56.0,201.0,,,2253.0,0.2,0.7,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,KEBILI,SUD OUEST,38.0,186.0,,,3255.0,0.2,0.8,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,ZARZIS,SUD,65.0,131.0,,,2182.0,0.3,0.6,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,MEDNINE,SUD,56.0,186.0,,,2552.0,0.2,0.6,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,JERBA,SUD,103.0,436.0,,,7488.0,0.4,1.6,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,TATAOUINE,SUD,31.0,136.0,,,2155.0,0.1,0.5,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,BEN GUERDENE,SUD,23.0,56.0,,,914.0,0.1,0.3,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,GABES NORD,SUD,27.0,86.0,,,1708.0,0.1,0.3,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,MSAKEN,CENTRE,80.0,251.0,,,2421.0,0.3,1.0,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,SBEITLA,SUD OUEST,1.0,8.0,,,120.0,0.0,0.0,prosol_mars_2026_1.txt,official_prosol_snapshot
+2026-03,11/05/2026,ENFIDHA,CENTRE,28.0,49.0,,,587.0,0.1,0.2,prosol_mars_2026_1.txt,official_prosol_snapshot

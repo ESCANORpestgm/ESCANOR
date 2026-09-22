@@ -1,62 +1,100 @@
-"""
-Generates a real actual-vs-forecast historical comparison, national level,
-for the last N days of the held-out test period. This is exactly the kind
-of feedback data models/retrain.py uses to detect drift — showing it in
-the dashboard makes the continuous-learning story concrete instead of
-abstract.
+"""Build reproducible aggregate rooftop-PV forecast history for the dashboard.
 
-Run: python models/history.py
+The historical workflow uses the SolNet-style dataset generator, but keeps the
+PréSol spatial level at STEG commercial districts and national aggregation.
+Synthetic output is explicitly marked and must be replaced by validated real
+measurements for production evaluation.
+
+Run:
+    python models/history.py --days 7
 """
 
+from __future__ import annotations
+
+import argparse
 import os
 import sys
+from pathlib import Path
+from typing import cast
+
+import numpy as np
 import pandas as pd
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from data.steg_districts import STEG_DISTRICTS, DISTRICT_CAPACITY_LOOKUP, DISTRICT_DUST_LOOKUP
-from ingestion.synthetic_data import generate_all
+from data.steg_districts import DISTRICT_CAPACITY_LOOKUP, DISTRICT_DUST_LOOKUP
 from models.ml_forecast import load_models, predict
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "artifacts", "quantile_models.joblib")
+ROOT = Path(__file__).resolve().parents[1]
+MODEL_PATH = ROOT / "models" / "artifacts" / "quantile_models.joblib"
+DATASET_PATH = ROOT / "results" / "datasets" / "rooftop_actual_15min.csv"
+HISTORY_PATH = ROOT / "results" / "history_national.csv"
 
 
-def build_national_history(days: int = 7) -> pd.DataFrame:
-    capacity_lookup = DISTRICT_CAPACITY_LOOKUP
-    dust_lookup = DISTRICT_DUST_LOOKUP
+def _to_model_schema(dataset: pd.DataFrame) -> pd.DataFrame:
+    frame = cast(pd.DataFrame, dataset.copy())
+    frame["timestamp"] = pd.to_datetime(frame["timestamp_utc"], utc=True).dt.tz_localize(None)
+    frame["governorate"] = frame["district"]
+    frame["steg_district"] = frame["district"]
+    frame["production_mw"] = frame["power_kw"] / 1000.0
+    return frame
 
-    # Held-out test period (same split used in ml_forecast.py)
-    df = generate_all(STEG_DISTRICTS, start="2024-10-01", end="2025-01-01")
-    cutoff = df.timestamp.max() - pd.Timedelta(days=days)
-    recent = df[df.timestamp >= cutoff].copy()
 
-    # Nowcast-style comparison: what would the model have said, using the
-    # weather available at the time (horizon_hours forced to 0, i.e. "we're
-    # asking right now, for right now" — the fairest actual-vs-forecast test).
-    recent["horizon_hours"] = 0.0
+def build_national_history(
+    days: int = 30,
+    start: str = "2020-12-01",
+    seed: int = 42,
+) -> pd.DataFrame:
+    """Evaluate the deployed model against the PVGIS district dataset."""
+    del seed  # Retained for CLI compatibility; PVGIS data is deterministic.
+    if not DATASET_PATH.is_file():
+        raise FileNotFoundError(f"PVGIS dataset not found: {DATASET_PATH}")
+    dataset = pd.read_csv(DATASET_PATH)
+    timestamps = pd.to_datetime(dataset["timestamp_utc"], utc=True)
+    end = pd.Timestamp(start, tz="UTC") + pd.Timedelta(days=days)
+    selected = dataset.loc[(timestamps >= pd.Timestamp(start, tz="UTC")) & (timestamps < end)].copy()
+    if selected.empty:
+        raise ValueError(f"No PVGIS rows found between {start} and {end.date()}")
+    # The dashboard compares hourly national points, so aggregate the 15-minute
+    # PVGIS observations before evaluating and plotting them.
+    selected["timestamp_utc"] = pd.to_datetime(selected["timestamp_utc"], utc=True).dt.floor("h").astype(str)
+    numeric_columns = ["power_kw", "ghi_wm2", "dni_wm2", "dhi_wm2", "temp_c", "cloud_cover_pct", "wind_speed_ms", "energy_kwh"]
+    hourly = selected.groupby(["timestamp_utc", "district", "direction"], as_index=False)[numeric_columns].mean()
+    for column in ["location_id", "pv_count", "system_size_kwc", "installed_capacity_kwp", "tilt_deg", "azimuth_deg", "horizon_hours", "quality_status", "source", "dataset_version"]:
+        if column in selected.columns:
+            hourly[column] = selected.groupby(["timestamp_utc", "district", "direction"], as_index=False)[column].first()[column]
+    dataset = hourly
 
-    models = load_models(MODEL_PATH)
-    preds = predict(models, recent, capacity_lookup, dust_lookup)
+    model_frame = _to_model_schema(dataset)
+    models = load_models(str(MODEL_PATH))
+    predictions = cast(pd.DataFrame, predict(models, model_frame, DISTRICT_CAPACITY_LOOKUP, DISTRICT_DUST_LOOKUP))
 
-    national = preds.groupby("timestamp").agg(
+    national = cast(pd.DataFrame, predictions.groupby("timestamp", as_index=False).agg(
         actual_mw=("production_mw", "sum"),
         forecast_p50_mw=("forecast_p50_mw", "sum"),
         forecast_p10_mw=("forecast_p10_mw", "sum"),
         forecast_p90_mw=("forecast_p90_mw", "sum"),
-    ).reset_index()
-
+    ))
     national["error_mw"] = national["forecast_p50_mw"] - national["actual_mw"]
-    national["error_pct"] = (
-        100 * national["error_mw"] / national["actual_mw"].replace(0, pd.NA)
-    ).fillna(0)
-
+    actual = cast(pd.Series, national["actual_mw"])
+    national["error_pct"] = (100 * national["error_mw"] / actual.replace(0, np.nan)).fillna(0)
+    national["source"] = str(dataset["source"].iloc[0]) if "source" in dataset.columns else "pvgis_district_model"
+    national["dataset_path"] = str(DATASET_PATH.relative_to(ROOT))
     return national
 
 
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--days", type=int, default=30)
+    parser.add_argument("--start", default="2020-12-01")
+    parser.add_argument("--seed", type=int, default=42)
+    args = parser.parse_args()
+
+    history = build_national_history(days=args.days, start=args.start, seed=args.seed)
+    HISTORY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    history.to_csv(HISTORY_PATH, index=False)
+    print(f"Saved {len(history)} national history rows to {HISTORY_PATH}")
+    print(f"Saved source dataset to {DATASET_PATH}")
+
+
 if __name__ == "__main__":
-    history = build_national_history(days=7)
-    results_dir = os.path.join(os.path.dirname(__file__), "..", "results")
-    os.makedirs(results_dir, exist_ok=True)
-    out_path = os.path.join(results_dir, "history_national.csv")
-    history.to_csv(out_path, index=False)
-    print(f"Saved {len(history)} rows to {out_path}")
-    print(history.tail(10).to_string(index=False))
+    main()

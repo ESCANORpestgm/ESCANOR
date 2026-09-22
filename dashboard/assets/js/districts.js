@@ -173,12 +173,19 @@ async function loadDistrictForecastDetails(districtObj) {
             predTbody.innerHTML = '';
             // Show next 48 hours
             data.slice(0, 48).forEach(row => {
-                const unc = row.uncertainty_mw || (row.forecast_p90_mw - row.forecast_p10_mw);
-                const ratio = row.uncertainty_ratio || (row.forecast_p50_mw > 0 ? unc / row.forecast_p50_mw : 0);
+                const p10Value = Number(row.forecast_p10_mw || 0);
+                const p50Value = Number(row.forecast_p50_mw || 0);
+                const p90Value = Number(row.forecast_p90_mw || 0);
+                const unc = Math.max(0, p90Value - p10Value);
                 let uncClass = 'low';
                 let uncLabel = 'Faible';
-                if (ratio >= 0.7) { uncClass = 'high'; uncLabel = 'Élevée'; }
-                else if (ratio >= 0.3) { uncClass = 'mid'; uncLabel = 'Moyenne'; }
+                if (p50Value <= 0.05 && p90Value <= 0.05) {
+                    uncLabel = 'Nulle (nuit)';
+                } else {
+                    const ratio = p50Value > 0 ? unc / p50Value : 1;
+                    if (ratio >= 0.7) { uncClass = 'high'; uncLabel = 'Élevée'; }
+                    else if (ratio >= 0.3) { uncClass = 'mid'; uncLabel = 'Moyenne'; }
+                }
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `

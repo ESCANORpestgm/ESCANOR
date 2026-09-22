@@ -84,19 +84,19 @@
         <!-- Summary KPIs -->
         <section class="kpi-grid" id="registry-kpi-grid">
             <div class="kpi-card">
-                <div class="kpi-label">Puissance Raccordée</div>
+                <div class="kpi-label" data-i18n="installed-capacity">Puissance Raccordée</div>
                 <div class="kpi-value" id="reg-total-cap">-- <span style="font-size:1rem;color:var(--text-secondary);">MWc</span></div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">Districts Commerciaux</div>
+                <div class="kpi-label" data-i18n="commercial-district">Districts Commerciaux</div>
                 <div class="kpi-value" id="reg-dist-count">50 <span style="font-size:1rem;color:var(--text-secondary);">districts (7 Dir.)</span></div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">Dossiers en Instance</div>
+                <div class="kpi-label" data-i18n="pending-dossiers-label">Dossiers en Instance</div>
                 <div class="kpi-value" id="reg-pending">-- <span style="font-size:1rem;color:var(--text-secondary);">demandes</span></div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-label">Taux Réalisation Moyen</div>
+                <div class="kpi-label" data-i18n="execution-rate">Taux Réalisation Moyen</div>
                 <div class="kpi-value" id="reg-exec-rate">-- <span style="font-size:1rem;color:var(--text-secondary);">%</span></div>
             </div>
         </section>
@@ -113,7 +113,7 @@
                 <div class="flex-row" style="margin-bottom:1rem;gap:1rem;flex-wrap:wrap;">
                     <input type="text" id="reg-search" class="search-input" style="flex:1;margin:0;" placeholder="🔍 Filtrer par district, direction ou gouvernorat…">
                     <select id="reg-district-filter" style="padding:8px 12px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-family:var(--font-sans);font-size:0.9rem;background:var(--bg-canvas);color:var(--text-primary);">
-                        <option value="">Toutes les Directions</option>
+                        <option value="" data-i18n="all-directions">Toutes les Directions</option>
                     </select>
                 </div>
                 <table class="data-table">

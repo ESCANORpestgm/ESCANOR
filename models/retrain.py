@@ -50,7 +50,10 @@ def check_drift_and_retrain(recent_df: pd.DataFrame, capacity_lookup: dict, dust
     our_mae = (preds.loc[daylight, "forecast_p50_mw"] - preds.loc[daylight, "production_mw"]).abs().mean()
 
     df_sorted = recent_df.sort_values(["governorate", "timestamp"]).copy()
-    df_sorted["persistence_mw"] = df_sorted.groupby("governorate")["production_mw"].shift(24)
+    intervals = pd.to_datetime(df_sorted["timestamp"]).sort_values().diff().dropna().dt.total_seconds() / 60
+    interval_minutes = float(intervals[intervals > 0].median()) if not intervals.empty else 60.0
+    persistence_steps = max(1, round(24 * 60 / interval_minutes))
+    df_sorted["persistence_mw"] = df_sorted.groupby("governorate")["production_mw"].shift(persistence_steps)
     persist_mae = (df_sorted["persistence_mw"] - df_sorted["production_mw"]).abs().mean()
     drift_pct = 100 * our_mae / persist_mae if persist_mae > 0 else 0
 

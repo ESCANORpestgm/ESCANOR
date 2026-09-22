@@ -50,7 +50,7 @@ def build_training_frame(measurement_path: Path, weather_path: Path | None = Non
         valid.groupby(["timestamp_utc", "district", "direction"], as_index=False)
         .agg(production_kw=("power_kw", "sum"))
     ))
-    grouped["timestamp"] = grouped.pop("timestamp_utc")
+    grouped["timestamp"] = pd.to_datetime(grouped.pop("timestamp_utc"), utc=True).dt.tz_localize(None)
     grouped["governorate"] = grouped.pop("district")
     grouped["production_mw"] = grouped.pop("production_kw") / 1000.0
 
@@ -67,7 +67,7 @@ def build_training_frame(measurement_path: Path, weather_path: Path | None = Non
         if missing:
             raise ValueError(f"Weather data is missing columns: {sorted(missing)}")
         weather["timestamp_utc"] = pd.to_datetime(weather["timestamp_utc"], utc=True, errors="coerce")
-        weather["timestamp"] = weather.pop("timestamp_utc")
+        weather["timestamp"] = pd.to_datetime(weather.pop("timestamp_utc"), utc=True).dt.tz_localize(None)
         weather["governorate"] = weather.pop("district")
         grouped = grouped.merge(
             weather[["timestamp", "governorate", *WEATHER_COLUMNS]],
@@ -77,7 +77,7 @@ def build_training_frame(measurement_path: Path, weather_path: Path | None = Non
         weather_rows = cast(pd.DataFrame, source.groupby(
             ["timestamp_utc", "district"], as_index=False
         )[list(WEATHER_COLUMNS)].first())
-        weather_rows["timestamp"] = weather_rows.pop("timestamp_utc")
+        weather_rows["timestamp"] = pd.to_datetime(weather_rows.pop("timestamp_utc"), utc=True).dt.tz_localize(None)
         weather_rows["governorate"] = weather_rows.pop("district")
         grouped = grouped.merge(weather_rows, on=["timestamp", "governorate"], how="inner")
 

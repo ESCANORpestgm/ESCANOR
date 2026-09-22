@@ -44,20 +44,20 @@
             <div class="flex-row" style="flex-wrap:wrap;gap:1.5rem;">
                 <div>
                     <label style="font-size:0.82rem;color:var(--text-secondary);display:block;margin-bottom:4px;" for="unc-threshold">
-                        Uncertainty threshold (MW)
+                        <span data-i18n="uncertainty-threshold">Uncertainty threshold (MW)</span>
                     </label>
                     <input type="number" id="unc-threshold" value="50" min="10" max="500"
                         style="padding:6px 10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-family:var(--font-sans);width:120px;">
                 </div>
                 <div>
                     <label style="font-size:0.82rem;color:var(--text-secondary);display:block;margin-bottom:4px;" for="ramp-threshold">
-                        Ramp-down threshold (%)
+                        <span data-i18n="ramp-threshold">Ramp-down threshold (%)</span>
                     </label>
                     <input type="number" id="ramp-threshold" value="30" min="5" max="90"
                         style="padding:6px 10px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-family:var(--font-sans);width:120px;">
                 </div>
                 <div style="align-self:flex-end;">
-                    <button id="refresh-alerts-btn" class="play-btn">🔄 Refresh Alerts</button>
+                    <button id="refresh-alerts-btn" class="play-btn">🔄 <span data-i18n="refresh-alerts">Refresh Alerts</span></button>
                 </div>
             </div>
         </section>
@@ -65,6 +65,7 @@
         <!-- Alert List -->
         <section class="panel">
             <h3 class="panel-title" data-i18n="alerts-active">Active Alerts <span id="alert-count-badge" class="title-badge" style="background:transparent;color:var(--text-secondary);">Loading…</span></h3>
+            <div id="model-retraining-alert-status" class="retraining-alert-status" hidden></div>
             <div class="alert-list" id="alert-list">
                 <div class="no-alerts">
                     <span class="no-alert-icon">⏳</span>
@@ -73,35 +74,7 @@
             </div>
         </section>
 
-        <!-- Explanation -->
-        <section class="panel">
-            <h3 class="panel-title" data-i18n="alerts-info">Alert Types Explained</h3>
-            <table class="data-table">
-                <thead><tr><th>Type</th><th>Condition</th><th>Action for Dispatcher</th></tr></thead>
-                <tbody>
-                    <tr>
-                        <td><strong>🟠 HIGH_UNCERTAINTY</strong></td>
-                        <td>P90–P10 band exceeds threshold MW in the next 24 h</td>
-                        <td>Increase spinning reserve; plan for worst-case ramp</td>
-                    </tr>
-                    <tr>
-                        <td><strong>🔴 RAMP_DOWN</strong></td>
-                        <td>National PV output forecast to drop &gt;30% within 2 hours</td>
-                        <td>Pre-activate fast-response generation units</td>
-                    </tr>
-                    <tr>
-                        <td><strong>🟡 MODEL_DRIFT</strong></td>
-                        <td>Model MAE within 15% of naive persistence baseline</td>
-                        <td>Push fresh metering data; consider manual retrain trigger</td>
-                    </tr>
-                    <tr>
-                        <td><strong>⚡ SATURATION_RISK</strong></td>
-                        <td>District generation exceeds feeder threshold (Sfax, Jerba, Moknine, Kram, Ariana)</td>
-                        <td>Monitor substation reverse power flow; coordinate transformer tap changes</td>
-                    </tr>
-                </tbody>
-            </table>
-        </section>
+
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/i18next@23.16.8/dist/umd/i18next.min.js"></script>

@@ -27,9 +27,9 @@ def _daylength_hours(day_of_year: int, lat: float) -> float:
     return 2 * np.degrees(np.arccos(cos_h)) / 15
 
 
-def generate_hourly_weather(lat: float, lon: float, start: str, end: str) -> pd.DataFrame:
-    """Synthetic hourly GHI (W/m2), temperature (°C), cloud cover (%) series."""
-    idx = pd.date_range(start, end, freq="h", inclusive="left")
+def generate_hourly_weather(lat: float, lon: float, start: str, end: str, frequency: str = "h") -> pd.DataFrame:
+    """Synthetic weather series; defaults to hourly and supports 15-minute data."""
+    idx = pd.date_range(start, end, freq=frequency, inclusive="left")
     rows = []
     for ts in idx:
         doy = ts.dayofyear
@@ -116,7 +116,7 @@ def add_forecast_noise(ghi_true, temp_true, cloud_true, horizon_hours):
     return ghi_noisy, temp_noisy, cloud_noisy
 
 
-def generate_governorate_dataset(governorate, start="2023-01-01", end="2025-01-01") -> pd.DataFrame:
+def generate_governorate_dataset(governorate, start="2023-01-01", end="2025-01-01", frequency: str = "h") -> pd.DataFrame:
     """
     Full synthetic hourly dataset for one governorate, structured to train a
     horizon-aware forecaster:
@@ -129,7 +129,7 @@ def generate_governorate_dataset(governorate, start="2023-01-01", end="2025-01-0
       the model actually sees as input features, exactly as a real forecast
       pipeline would only have the (imperfect) NWP forecast to work with.
     """
-    df = generate_hourly_weather(governorate.lat, governorate.lon, start, end)
+    df = generate_hourly_weather(governorate.lat, governorate.lon, start, end, frequency=frequency)
     df["governorate"] = governorate.name
     direction = getattr(governorate, "direction", None) or getattr(governorate, "district", "Unknown")
     df["district"] = direction
@@ -154,8 +154,8 @@ def generate_governorate_dataset(governorate, start="2023-01-01", end="2025-01-0
     return df
 
 
-def generate_all(governorates, start="2023-01-01", end="2025-01-01") -> pd.DataFrame:
-    return pd.concat([generate_governorate_dataset(g, start, end) for g in governorates],
+def generate_all(governorates, start="2023-01-01", end="2025-01-01", frequency: str = "h") -> pd.DataFrame:
+    return pd.concat([generate_governorate_dataset(g, start, end, frequency=frequency) for g in governorates],
                       ignore_index=True)
 
 

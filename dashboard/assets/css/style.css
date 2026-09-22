@@ -234,6 +234,65 @@ body {
     margin-bottom: 1.75rem;
     box-shadow: var(--shadow-sm);
 }
+.flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.performance-toolbar .panel-title { flex: 1; margin-bottom: 0; }
+.learning-cadence-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+.learning-cadence-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.85rem 1rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+}
+.learning-cadence-card strong { font-size: 0.78rem; color: var(--text-secondary); }
+.learning-cadence-card span { font-size: 0.9rem; color: var(--text-primary); }
+.learning-cadence-card.warning { border-color: var(--alert-warning-border); background: var(--alert-warning-bg); }
+
+.installation-update-form {
+    display: flex;
+    align-items: end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+.installation-update-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+.installation-update-form input,
+.installation-update-form select {
+    min-width: 150px;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 4px);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+}
+.history-empty {
+    padding: 1rem 0 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+}
+.history-error-message {
+    color: var(--status-warn);
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+}
+
 .panel-title {
     font-family: var(--font-serif);
     font-size: 1.1rem;
@@ -245,6 +304,28 @@ body {
     align-items: center;
     gap: 0.6rem;
 }
+.provenance-badge {
+    display: inline-block;
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 3px 7px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+.provenance-badge.warning {
+    background: var(--alert-warning-bg);
+    border: 1px solid var(--alert-warning-border);
+    color: var(--status-warn);
+}
+.provenance-badge.verified {
+    background: var(--alert-success-bg, rgba(39, 174, 96, 0.1));
+    border: 1px solid var(--status-good);
+    color: var(--status-good);
+}
+
 .panel-title .title-badge {
     font-family: var(--font-sans);
     font-size: 0.7rem;
@@ -413,6 +494,22 @@ body {
     background: var(--alert-warning-bg);
     border-color: var(--status-warn);
 }
+.retraining-alert-status {
+    margin-bottom: 0.85rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--accent-primary);
+    border-radius: var(--radius-sm);
+    background: var(--accent-light);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+}
+.retraining-alert-status.failed {
+    border-color: var(--status-bad);
+    background: var(--alert-critical-bg);
+}
+.retraining-alert-status.running {
+    border-color: var(--accent-primary);
+}
 .alert-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px; }
 .alert-body { flex: 1; }
 .alert-type { font-weight: 600; font-size: 0.85rem; margin-bottom: 2px; }
@@ -509,6 +606,7 @@ body {
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
+    .learning-cadence-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .sidebar { display: none; }
     .main-content { padding: 1.5rem; }
     .map-layout { flex-direction: column; }

@@ -1,6 +1,8 @@
 """Metering, retraining, and model-registry endpoints."""
 
+import json
 import threading
+from pathlib import Path
 
 import pandas as pd
 from fastapi import APIRouter, HTTPException, Security
@@ -11,6 +13,12 @@ from models.model_registry import current_production, list_model_versions, list_
 from models.rooftop_training_adapter import build_training_frame
 
 router = APIRouter(tags=["Continuous Learning"])
+_RETRAIN_LOCK = threading.Lock()
+RETRAIN_STATE_PATH = RESULTS_DIR / "retrain_state.json"
+
+
+def _write_retrain_state(state: dict[str, object]) -> None:
+    RETRAIN_STATE_PATH.write_text(json.dumps(state, ensure_ascii=False, default=str), encoding="utf-8")
 
 
 class MeteringRow(BaseModel):
@@ -34,8 +42,10 @@ def _run_retrain(training_frame: pd.DataFrame) -> None:
         if result.get("retrained"):
             _state["models"] = None
             _state["cache_time"] = None
+        _write_retrain_state({"status": "completed", "finished_at": pd.Timestamp.now().isoformat(), "result": result})
         print(f"[retrain] {result}")
     except Exception as error:
+        _write_retrain_state({"status": "failed", "finished_at": pd.Timestamp.now().isoformat(), "error": str(error)})
         print(f"[retrain] error: {error}")
 
 
@@ -56,33 +66,82 @@ def metering_push(rows: list[MeteringRow], _key: str = Security(require_api_key)
     }
 
 
-@router.post("/models/retrain", tags=["Model Registry"])
-def trigger_manual_retrain():
+def _latest_training_frame() -> tuple[pd.DataFrame, Path] | None:
     measurement_root = RESULTS_DIR / "measurements"
     snapshots = sorted(measurement_root.glob("*/validated_measurements.csv"), key=lambda path: path.stat().st_mtime, reverse=True) if measurement_root.exists() else []
     if not snapshots:
-        raise HTTPException(400, "Import a validated rooftop measurement snapshot before retraining")
+        return None
+    return build_training_frame(snapshots[0]), snapshots[0]
+
+
+def start_latest_retrain() -> dict[str, object] | None:
+    """Start one retraining job from the latest validated snapshot."""
+    if not _RETRAIN_LOCK.acquire(blocking=False):
+        return {"accepted": False, "message": "Retraining already running."}
     try:
-        training_frame = build_training_frame(snapshots[0])
+        latest = _latest_training_frame()
+        if latest is None:
+            _RETRAIN_LOCK.release()
+            return None
+        training_frame, snapshot = latest
+        _write_retrain_state({
+            "status": "started",
+            "started_at": pd.Timestamp.now().isoformat(),
+            "snapshot": str(snapshot.relative_to(RESULTS_DIR.parent)),
+            "rows": len(training_frame),
+        })
+        def run_and_release() -> None:
+            try:
+                _run_retrain(training_frame)
+            finally:
+                _RETRAIN_LOCK.release()
+        threading.Thread(target=run_and_release, daemon=True).start()
+        return {
+            "accepted": True,
+            "message": "Retraining started from the latest validated rooftop snapshot.",
+            "snapshot": str(snapshot.relative_to(RESULTS_DIR.parent)),
+            "rows": len(training_frame),
+            "locations": int(training_frame["governorate"].nunique()),  # type: ignore[arg-type]
+        }
+    except Exception:
+        _RETRAIN_LOCK.release()
+        raise
+
+
+def scheduled_retrain() -> None:
+    try:
+        result = start_latest_retrain()
+        if result is None:
+            print("[retrain] daily check skipped: no validated rooftop snapshot")
+        else:
+            print(f"[retrain] daily check: {result}")
+    except Exception as error:
+        print(f"[retrain] daily check failed: {error}")
+
+
+@router.post("/models/retrain", tags=["Model Registry"])
+def trigger_manual_retrain():
+    try:
+        result = start_latest_retrain()
     except ValueError as error:
         raise HTTPException(400, str(error)) from error
-    thread = threading.Thread(target=_run_retrain, args=(training_frame,), daemon=True)
-    thread.start()
-    return {
-        "accepted": True,
-        "message": "Manual retraining started from the latest validated rooftop snapshot; promotion requires validation improvement.",
-        "snapshot": str(snapshots[0].relative_to(RESULTS_DIR.parent)),
-        "rows": len(training_frame),
-        "locations": int(training_frame["governorate"].nunique()),  # type: ignore[arg-type]
-    }
+    if result is None:
+        raise HTTPException(400, "Import a validated rooftop measurement snapshot before retraining")
+    return result
 
 
 @router.get("/retrain/status")
 def retrain_status():
+    schedule = {
+        "enabled": True,
+        "interval_days": 1,
+        "source": "latest validated rooftop measurement snapshot",
+        "promotion_policy": "promote only when candidate validation improves",
+    }
     if not RETRAIN_LOG.exists():
-        return {"retrain_log": [], "message": "No retrain events yet."}
+        return {"retrain_log": [], "schedule": schedule, "message": "Continuous learning is waiting for a validated rooftop snapshot."}
     log = pd.read_csv(RETRAIN_LOG)
-    return {"retrain_log": log.sort_values("timestamp", ascending=False).head(10).to_dict(orient="records")}
+    return {"retrain_log": log.sort_values("timestamp", ascending=False).head(10).to_dict(orient="records"), "schedule": schedule}
 
 
 @router.get("/models/production", tags=["Model Registry"])

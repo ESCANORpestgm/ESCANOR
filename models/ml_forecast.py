@@ -125,9 +125,9 @@ def predict(models: dict, df: pd.DataFrame, capacity_lookup: dict,
         preds = model.predict(X)
         out[f"forecast_{label}_mw"] = np.clip(preds, 0, None)
     # Enforce monotonicity: p10 ≤ p50 ≤ p90 (quantile crossing guard)
-    out[["forecast_p10_mw", "forecast_p50_mw", "forecast_p90_mw"]] = np.sort(
-        out[["forecast_p10_mw", "forecast_p50_mw", "forecast_p90_mw"]].values, axis=1
-    )
+    quantile_columns = ["forecast_p10_mw", "forecast_p50_mw", "forecast_p90_mw"]
+    out[quantile_columns] = np.sort(out[quantile_columns].values, axis=1)
+
     return out
 
 

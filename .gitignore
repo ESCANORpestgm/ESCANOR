@@ -15,6 +15,12 @@ results/*.db-shm
 results/metering_buffer.csv
 results/retrain_log.csv
 
+# Generated reports and cache
+reports/generated/
+results/datasets/pvgis_cache/
+results/metrics_by_horizon.csv
+results/model_validation_metrics.json
+
 # Editor / OS
 .vscode/
 .DS_Store

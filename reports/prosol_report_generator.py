@@ -17,6 +17,7 @@ from typing import Dict, Any
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from data.steg_districts import STEG_DISTRICTS, DIRECTIONS, calculate_displacement, direction_summary, NATIONAL_ROOFTOP_PV_MWC
+from reports.prosol_updates import aggregate_updates
 
 
 def _load_imported_summary(snapshot_path: str | os.PathLike[str] | None = None) -> Dict[str, Any] | None:
@@ -74,6 +75,43 @@ def _load_imported_summary(snapshot_path: str | os.PathLike[str] | None = None) 
     }
 
 
+def _apply_live_installation_updates(summary: Dict[str, Any]) -> Dict[str, Any]:
+    """Overlay validated append-only installation updates on the current report."""
+    updates = aggregate_updates()
+    live_sites = sum(int(row.get("new_installations", 0)) for row in updates.values())
+    live_capacity_mw = sum(float(row.get("installed_capacity_kwp", 0)) for row in updates.values()) / 1000
+    if not live_sites and not live_capacity_mw:
+        return summary
+
+    indicators = {indicator["id"]: indicator for indicator in summary.get("indicators", [])}
+    installations = indicators.get(1)
+    capacity = indicators.get(2)
+    if installations:
+        installations["month_current"] += live_sites
+        installations["ytd_current"] += live_sites
+        installations["since_2011"] += live_sites
+        if installations["month_prev"]:
+            installations["month_var"] = (installations["month_current"] / installations["month_prev"] - 1) * 100
+        if installations["ytd_prev"]:
+            installations["ytd_var"] = (installations["ytd_current"] / installations["ytd_prev"] - 1) * 100
+    if capacity:
+        capacity["month_current"] += live_capacity_mw
+        capacity["ytd_current"] += live_capacity_mw
+        capacity["since_2011"] += live_capacity_mw
+        if capacity["month_prev"]:
+            capacity["month_var"] = (capacity["month_current"] / capacity["month_prev"] - 1) * 100
+        if capacity["ytd_prev"]:
+            capacity["ytd_var"] = (capacity["ytd_current"] / capacity["ytd_prev"] - 1) * 100
+
+    if installations:
+        recap = summary.setdefault("recap_executions", {})
+        recap["executes_current"] = installations["ytd_current"]
+        denominator = recap.get("executes_current", 0) + recap.get("pending_current", 0)
+        recap["completion_rate_pct"] = round(recap["executes_current"] / denominator * 100, 1) if denominator else 0
+    summary["live_updates_applied"] = live_sites
+    return summary
+
+
 def get_prosol_summary_metrics(
     month_str: str = "Mars 2026",
     snapshot_path: str | os.PathLike[str] | None = None,
@@ -83,10 +121,10 @@ def get_prosol_summary_metrics(
     """
     imported_summary = _load_imported_summary(snapshot_path)
     if imported_summary is not None:
-        return imported_summary
+        return _apply_live_installation_updates(imported_summary)
 
     # Fallback values used only when no imported report snapshot exists.
-    return {
+    fallback = {
         "report_period": month_str,
         "emission_date": "11/05/2026",
         "direction_tutelle": "Direction Centrale de la Distribution — Direction Commerciale et Marketing",
@@ -213,6 +251,7 @@ def get_prosol_summary_metrics(
             {"name": "HAMMAMET", "rate_2026": 54.6, "rate_2025": 59.5},
         ]
     }
+    return _apply_live_installation_updates(fallback)
 
 
 def generate_html_prosol_report(
@@ -224,6 +263,14 @@ def generate_html_prosol_report(
     """
     data = get_prosol_summary_metrics("Mars 2026", snapshot_path=snapshot_path)
     dir_summary = direction_summary()
+    indicators = {indicator["id"]: indicator for indicator in data["indicators"]}
+    installed_capacity_mw = float(indicators.get(2, {}).get("since_2011", 0))
+    installed_sites = int(indicators.get(1, {}).get("since_2011", 0))
+    injected_gwh = float(indicators.get(5, {}).get("since_2011", 0))
+    produced_gwh = float(indicators.get(3, {}).get("since_2011", 0))
+    injection_rate = (injected_gwh / produced_gwh * 100) if produced_gwh else 0
+    avoided_fuel_cost_mdt = float(indicators.get(7, {}).get("since_2011", 0))
+    report_period = data.get("report_period", "Mars 2026")
 
     html = f"""<!DOCTYPE html>
 <html lang="fr">
@@ -368,25 +415,25 @@ def generate_html_prosol_report(
 
   <div class="report-title-banner">
     <h1>TABLEAU DE BORD PROGRAMME PROSOL</h1>
-    <p>PROSOL ELECTRIQUE (PHOTOVOLTAÏQUE PV) &bull; ETAT : MARS 2026</p>
+    <p>PROSOL ELECTRIQUE (PHOTOVOLTAÏQUE PV) &bull; ETAT : {report_period.upper()}</p>
   </div>
 
   <!-- Key Topline KPIs -->
   <div class="kpi-grid">
     <div class="kpi-card">
-      <div class="kpi-val">456.0 MWc</div>
+      <div class="kpi-val">{installed_capacity_mw:,.1f} MWc</div>
       <div class="kpi-lbl">Puissance Installée Cumulée</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-val">144 979</div>
+      <div class="kpi-val">{installed_sites:,}</div>
       <div class="kpi-lbl">Installations PV Raccordées</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-val">64.1%</div>
-      <div class="kpi-lbl">Taux d'Injection Réseau (1 511 GWh)</div>
+      <div class="kpi-val">{injection_rate:.1f}%</div>
+      <div class="kpi-lbl">Taux d'Injection Réseau ({injected_gwh:,.1f} GWh)</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-val">635.2 MDT</div>
+      <div class="kpi-val">{avoided_fuel_cost_mdt:,.1f} MDT</div>
       <div class="kpi-lbl">Coût Combustible Évité</div>
     </div>
   </div>

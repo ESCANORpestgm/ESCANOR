@@ -1,11 +1,13 @@
 """Operational alerts and diagnostic metric endpoints."""
 
-from typing import cast
+import json
+from typing import Any, cast
 
 import pandas as pd
 from fastapi import APIRouter, HTTPException, Query
 
 from api.core import RESULTS_DIR, RETRAIN_LOG, get_forecast_frame
+from api.routers.learning import RETRAIN_STATE_PATH
 from data.steg_districts import SATURATION_THRESHOLDS_MW
 from models.aggregation import aggregate
 
@@ -47,6 +49,26 @@ def get_alerts(
         if peak["forecast_p50_mw"] >= threshold:
             alerts.append({"type": "SATURATION_RISK", "district": district_name, "timestamp": str(peak["timestamp"]), "detail": f"Generation in {district_name} may reach {peak['forecast_p50_mw']:.1f} MW.", "severity": "critical"})
 
+    if RETRAIN_STATE_PATH.exists():
+        try:
+            retrain_state = json.loads(RETRAIN_STATE_PATH.read_text(encoding="utf-8"))
+            if retrain_state.get("status") == "started":
+                alerts.append({
+                    "type": "MODEL_RETRAINING_STARTED",
+                    "timestamp": retrain_state.get("started_at", ""),
+                    "detail": f"Automatic model retraining has started from {retrain_state.get('snapshot', 'the latest validated snapshot')}.",
+                    "severity": "info",
+                })
+            elif retrain_state.get("status") == "failed":
+                alerts.append({
+                    "type": "MODEL_RETRAINING_FAILED",
+                    "timestamp": retrain_state.get("finished_at", ""),
+                    "detail": f"Automatic model retraining failed: {retrain_state.get('error', 'unknown error')}.",
+                    "severity": "warning",
+                })
+        except (OSError, json.JSONDecodeError):
+            pass
+
     if RETRAIN_LOG.exists():
         log = pd.read_csv(RETRAIN_LOG)
         if not log.empty:
@@ -56,6 +78,25 @@ def get_alerts(
                 alerts.append({"type": "MODEL_DRIFT", "timestamp": str(latest.get("timestamp", "")), "detail": f"Model MAE is {drift:.1f}% of persistence baseline.", "severity": "warning"})
 
     return {"alerts": alerts, "count": len(alerts)}
+
+
+@router.get("/history/rooftop", tags=["Diagnostics"])
+def rooftop_history_summary():
+    path = RESULTS_DIR / "datasets" / "rooftop_actual_15min.csv"
+    if not path.exists():
+        raise HTTPException(404, "No PVGIS rooftop dataset found.")
+    frame = pd.read_csv(path)
+    district_summary = frame.drop_duplicates(subset=["district"])
+    return {
+        "dataset_path": str(path.relative_to(RESULTS_DIR.parent)),
+        "source": str(frame["source"].iloc[0]) if not frame.empty and "source" in frame.columns else "unknown",
+        "rows": len(frame),
+        "districts": int(cast(Any, frame["district"].nunique())),
+        "pv_count": int(cast(Any, district_summary["pv_count"].sum())),
+        "installed_capacity_kwp": float(cast(Any, district_summary["installed_capacity_kwp"].sum())),
+        "start": str(frame["timestamp_utc"].min()),
+        "end": str(frame["timestamp_utc"].max()),
+    }
 
 
 @router.get("/metrics")
@@ -71,6 +112,17 @@ def metrics():
         "coverage_P10_P90_%": "coverage_pct",
     })
     return frame.to_dict(orient="records")
+
+
+@router.get("/model/validation", tags=["Diagnostics"])
+def model_validation():
+    path = RESULTS_DIR / "model_validation_metrics.json"
+    if not path.exists():
+        raise HTTPException(404, "No model validation metrics found — run python -m models.validation_report first.")
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(500, "Model validation metrics could not be read.") from exc
 
 
 @router.get("/history/national")
