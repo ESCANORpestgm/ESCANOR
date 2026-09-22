@@ -28,6 +28,7 @@
             <li><a href="performance.html"><span class="nav-icon">🔬</span><span data-i18n="nav-perf">Model Health</span></a></li>
             <li><a href="alerts.html"><span class="nav-icon">🔔</span><span data-i18n="nav-alerts">Alerts</span><span class="nav-badge" id="nav-alert-badge">0</span></a></li>
             <li><a href="registry.html"><span class="nav-icon">🏗️</span><span data-i18n="nav-registry">Park Registry</span></a></li>
+            <li><a href="prosol-history.html"><span class="nav-icon">🗂️</span><span data-i18n="nav-prosol-history">Prosol History</span></a></li>
         </ul>
 
         <div style="padding: 0 1rem 1rem 1rem;">
@@ -78,52 +79,6 @@
             </div>
         </section>
 
-        <!-- STEG Prosol Multi-Vector Displacement KPI Strip -->
-        <section class="panel mt-1" style="padding: 1rem 1.25rem; border-left: 3px solid var(--accent-primary);">
-            <div class="flex-between" style="margin-bottom:0.75rem;">
-                <span style="font-size:0.85rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent-primary);">
-                    🌿 Bilan & Économie d'Énergie STEG Prosol (Aujourd'hui)
-                </span>
-                <span style="font-size:0.78rem;color:var(--text-secondary);">Source: Ratios Officiels STEG Mars 2026</span>
-            </div>
-            <div class="prosol-kpi-strip">
-                <div class="prosol-kpi-item">
-                    <div class="prosol-kpi-icon">⚡</div>
-                    <div class="prosol-kpi-data">
-                        <div class="val" id="kpi-prosol-mwh">-- MWh</div>
-                        <div class="lbl">Production Prévue</div>
-                    </div>
-                </div>
-                <div class="prosol-kpi-item">
-                    <div class="prosol-kpi-icon">🔌</div>
-                    <div class="prosol-kpi-data">
-                        <div class="val" id="kpi-prosol-injected">-- MWh</div>
-                        <div class="lbl">Injecté Réseau (64.1%)</div>
-                    </div>
-                </div>
-                <div class="prosol-kpi-item">
-                    <div class="prosol-kpi-icon">💧</div>
-                    <div class="prosol-kpi-data">
-                        <div class="val" id="kpi-prosol-tep">-- tep</div>
-                        <div class="lbl">Combustible Évité</div>
-                    </div>
-                </div>
-                <div class="prosol-kpi-item">
-                    <div class="prosol-kpi-icon">💰</div>
-                    <div class="prosol-kpi-data">
-                        <div class="val" id="kpi-prosol-cost">-- DT</div>
-                        <div class="lbl">Coût Combustible Évité</div>
-                    </div>
-                </div>
-                <div class="prosol-kpi-item">
-                    <div class="prosol-kpi-icon">🌿</div>
-                    <div class="prosol-kpi-data">
-                        <div class="val" id="kpi-prosol-co2">-- t</div>
-                        <div class="lbl">Émissions CO₂ Évitées</div>
-                    </div>
-                </div>
-            </div>
-        </section>
 
         <!-- National Forecast Chart with Gross / Net Injection Toggle -->
         <section class="panel mt-1">
@@ -167,13 +122,14 @@
                     <div class="preview-spinner">Chargement des données de synthèse Prosol...</div>
                 </div>
                 <div class="modal-actions">
-                    <a href="/reports/prosol/html" target="_blank" class="btn btn-primary">📊 Ouvrir Rapport HTML Officiel</a>
+                    <a id="btn-open-prosol-html" href="#" target="_blank" rel="noopener" class="btn btn-primary">📊 Ouvrir Rapport HTML Officiel</a>
                     <button class="btn btn-secondary" id="btnDownloadProsolJson">⬇️ Télécharger Synthèse JSON</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23.16.8/dist/umd/i18next.min.js"></script>
     <script src="assets/js/app.js"></script>
 </body>
 </html>

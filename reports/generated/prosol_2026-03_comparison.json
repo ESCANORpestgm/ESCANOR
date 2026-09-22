@@ -1,0 +1,13 @@
+{
+  "scope": "rooftop_pv",
+  "left_source": "prosol_mars_2026_1.txt",
+  "right_source": "prosol_mars_2026_2.txt",
+  "same_report_period": true,
+  "districts_added": [],
+  "districts_removed": [],
+  "national_metric_differences": [],
+  "reconciliation": {
+    "left_passed": true,
+    "right_passed": true
+  }
+}

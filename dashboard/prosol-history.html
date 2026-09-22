@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PréSol — immutable historical STEG Prosol rooftop PV report snapshots.">
+    <title>PréSol — Prosol History</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body data-page="prosol-history">
+    <aside class="sidebar">
+        <div class="brand"><h1>PréSol</h1><p data-i18n="brand-sub">STEG PV Forecasting</p></div>
+        <div class="lang-toggle">
+            <button class="lang-btn active" data-lang="en">EN</button>
+            <button class="lang-btn" data-lang="fr">FR</button>
+            <button class="lang-btn" data-lang="ar">ع</button>
+        </div>
+        <ul class="nav-links"></head></title>
+</h1>            <li><a href="index.html"><span class="nav-icon">⚡</span><span data-i18n="nav-national">National Overview</span></a></li>
+            <li><a href="districts.html"><span class="nav-icon">📊</span><span data-i18n="nav-regional">Regional Analysis</span></a></li>
+            <li><a href="map.html"><span class="nav-icon">🗺️</span><span data-i18n="nav-map">Spatial Timelapse</span></a></li>
+            <li><a href="performance.html"><span class="nav-icon">🔬</span><span data-i18n="nav-perf">Model Health</span></a></li>
+            <li><a href="alerts.html"><span class="nav-icon">🔔</span><span data-i18n="nav-alerts">Alerts</span></a></li>
+            <li><a href="registry.html"><span class="nav-icon">🏗️</span><span data-i18n="nav-registry">Park Registry</span></a></li>
+            <li><a href="prosol-history.html" class="active"><span class="nav-icon">🗂️</span><span data-i18n="nav-prosol-history">Prosol History</span></a></li>
+        </ul>
+        <div class="api-status-box">
+            <div><span class="status-indicator" id="status-dot"></span><span id="status-text">Connecting…</span></div>
+            <div class="cache-age" id="status-cap">Cap: -- MWc</div>
+            <div class="cache-age" id="cache-age-display"></div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <h2></h2>Prosol Report History</h2>
+            <p></p>Immutable monthly rooftop-PV snapshots aligned with the official STEG report structure.</p>
+        </header>
+
+        <section class="panel history-toolbar">
+            <label for="report-selector">Report snapshot</label>
+            <select id="report-selector" class="history-select"><option></option>Loading…</option></select>
+            <span id="history-meta" class="text-muted"></span>
+        </section>
+
+        <div id="history-error" class="panel history-error" hidden></div>
+        <section id="history-content" hidden></section>
+            <div class="kpi-grid history-kpis" id="history-kpis"></div>
+            <div class="history-grid">
+                <section class="panel"><h3 class="panel-title">National metrics</h3><div class="chart-wrapper"><canvas id="nationalHistoryChart"></canvas></div></section>
+                <section class="panel"><h3 class="panel-title">Installations by Direction</h3><div class="chart-wrapper"><canvas id="directionHistoryChart"></canvas></div></section>
+            </div>
+            <div class="history-grid">
+                <section class="panel"><h3 class="panel-title">District snapshot</h3><div class="table-scroll"><table class="data-table" id="district-history-table"></table></div></section>
+                <section class="panel"><h3 class="panel-title">Pending dossiers</h3><div class="table-scroll"><table class="data-table" id="pending-history-table"></table></div></section>
+            </div>
+            <section class="panel"><h3 class="panel-title">Installation sizes (kWc)</h3><div class="chart-wrapper"><canvas id="sizeHistoryChart"></canvas></div></section>
+        </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23.16.8/dist/umd/i18next.min.js"></script>
+    <script src="assets/js/app.js"></script>
+</body>
+</html>

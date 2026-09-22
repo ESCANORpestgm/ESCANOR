@@ -41,6 +41,17 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+.history-toolbar { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.history-toolbar label { font-weight: 600; color: var(--text-secondary); }
+.history-select { min-width: 260px; padding: 0.65rem 0.8rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-surface); color: var(--text-primary); font-family: var(--font-sans); }
+.history-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+.history-grid .panel { min-width: 0; }
+.history-kpis { margin-top: 1.5rem; }
+.history-error { color: var(--status-bad); }
+.table-scroll { overflow: auto; max-height: 560px; }
+.table-scroll .data-table { min-width: 560px; }
+@media (max-width: 900px) { .history-grid { grid-template-columns: 1fr; } }
+
 body {
     background-color: var(--bg-canvas);
     color: var(--text-primary);
@@ -504,43 +515,6 @@ body {
     .map-drilldown { width: 100%; }
 }
 
-/* ── Prosol Multi-Vector KPI Strip ───────────────────────────────────────── */
-.prosol-kpi-strip {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 0.75rem;
-}
-.prosol-kpi-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    background: var(--bg-canvas);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    padding: 0.6rem 0.85rem;
-}
-.prosol-kpi-icon {
-    font-size: 1.35rem;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(16, 185, 129, 0.1);
-    border-radius: var(--radius-sm);
-    flex-shrink: 0;
-}
-.prosol-kpi-data .val {
-    font-size: 1.05rem;
-    font-weight: 700;
-    font-family: var(--font-mono);
-    color: var(--text-primary);
-}
-.prosol-kpi-data .lbl {
-    font-size: 0.7rem;
-    color: var(--text-secondary);
-    margin-top: 1px;
-}
 
 /* ── Chart Gross / Net Toggle Pills ───────────────────────────────────────── */
 .chart-toggle-pills {
@@ -705,3 +679,31 @@ body {
     color: var(--text-primary);
 }
 .btn-secondary:hover { background: var(--bg-hover); }
+
+/* ── Arabic / RTL layout support ──────────────────────────────────────────── */
+html[dir="rtl"] {
+    text-align: right;
+}
+html[dir="rtl"] .sidebar {
+    border-right: none;
+    border-left: 1px solid var(--border-color);
+}
+html[dir="rtl"] .nav-badge {
+    margin-left: 0;
+    margin-right: auto;
+}
+html[dir="rtl"] .data-table,
+html[dir="rtl"] .prediction-table-wrap table {
+    direction: rtl;
+}
+html[dir="rtl"] .data-table th,
+html[dir="rtl"] .data-table td {
+    text-align: right;
+}
+html[dir="rtl"] input,
+html[dir="rtl"] textarea {
+    text-align: right;
+}
+html[dir="rtl"] .modal-actions {
+    justify-content: flex-start;
+}

@@ -75,8 +75,9 @@ exactly (5,475).
 ## Architecture
 
 ```
-data/governorates.py       24 governorates: coordinates, STEG district grouping,
-                            capacity proxy, regional dust/soiling loss
+data/governorates.py       24 governorates: coordinates and regional losses
+data/prosol_report_schema.py  Canonical monthly Prosol rooftop-report structure
+data/source/                 Extracted official Prosol report snapshots
 ingestion/weather_client.py  Real Open-Meteo (forecast) + PVGIS-JRC (historical) calls
 ingestion/synthetic_data.py  Offline dev/demo generator: physics-based production +
                             horizon-scaled forecast noise (NWP skill degradation)

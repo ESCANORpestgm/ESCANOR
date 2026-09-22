@@ -25,6 +25,7 @@
             <li><a href="performance.html" class="active"><span class="nav-icon">🔬</span><span data-i18n="nav-perf">Model Health</span></a></li>
             <li><a href="alerts.html"><span class="nav-icon">🔔</span><span data-i18n="nav-alerts">Alerts</span><span class="nav-badge" id="nav-alert-badge">0</span></a></li>
             <li><a href="registry.html"><span class="nav-icon">🏗️</span><span data-i18n="nav-registry">Park Registry</span></a></li>
+            <li><a href="prosol-history.html"><span class="nav-icon">🗂️</span><span data-i18n="nav-prosol-history">Prosol History</span></a></li>
         </ul>
         <div class="api-status-box">
             <div><span class="status-indicator" id="status-dot"></span><span id="status-text">Connecting…</span></div>
@@ -51,6 +52,17 @@
             <p id="history-error" style="color:var(--status-warn);display:none;margin-top:10px;font-size:0.85rem;">
                 ⚠️ Run <code>python models/history.py</code> to generate history data.
             </p>
+        </section>
+
+        <!-- Saved forecast evaluations -->
+        <section class="panel">
+            <div class="flex-between">
+                <h3 class="panel-title">Saved Forecast Evaluations <span class="title-badge">ACTUAL vs FORECAST</span></h3>
+                <select id="evaluation-selector" class="history-select"><option></option>Loading evaluations…</option></select>
+            </div>
+            <div class="chart-wrapper"><canvas id="evaluationChart"></canvas></div>
+            <p id="evaluation-summary" class="text-muted" style="margin-top:0.75rem;"></p>
+            <p id="evaluation-error" style="color:var(--status-warn);display:none;margin-top:10px;font-size:0.85rem;"></p>
         </section>
 
         <!-- Backtest Metrics Table -->
@@ -87,8 +99,20 @@
                 <p style="color:var(--text-secondary);font-size:0.85rem;">No retrain events yet. Push metering data via <code>POST /metering/push</code>.</p>
             </div>
         </section>
+
+        <!-- Immutable model registry -->
+        <section class="panel">
+            <div class="flex-between" style="gap:1rem;flex-wrap:wrap;">
+                <h3 class="panel-title">Model Registry <span class="title-badge">VERSIONED</span></h3>
+                <button id="manual-retrain-btn" class="btn btn-primary" type="button">🔄 Run retraining</button>
+            </div>
+            <p id="production-model" class="text-muted" style="margin-bottom:0.75rem;">Loading production model…</p>
+            <p id="manual-retrain-status" class="text-muted" style="margin-bottom:0.75rem;"></p>
+            <div class="table-scroll"><table class="data-table" id="model-versions-table"></table></div>
+        </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23.16.8/dist/umd/i18next.min.js"></script>
     <script src="assets/js/app.js"></script>
 </body>
 </html>

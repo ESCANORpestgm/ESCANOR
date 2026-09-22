@@ -1,0 +1,8 @@
+name,current_month,previous_year_month,variance_month_pct,current_year_to_date,previous_year_to_date,variance_ytd_pct,since_program_start,unit,power_current_month,power_previous_year_month,power_current_year_to_date,power_previous_year_to_date,power_since_program_start
+TUNIS,717.0,488.0,47.0,1723.0,1094.0,57.0,28538.0,installations,2.6,1.9,6.3,4.4,95.7
+NORD,516.0,590.0,-13.0,1289.0,936.0,38.0,17294.0,installations,2.0,2.0,4.6,3.2,53.4
+NORD OUEST,141.0,196.0,-28.0,334.0,318.0,5.0,7364.0,installations,0.5,0.6,1.1,1.0,20.5
+CENTRE,754.0,949.0,-21.0,2508.0,1520.0,65.0,33685.0,installations,2.7,3.2,8.9,5.3,101.5
+SFAX,590.0,687.0,-14.0,1772.0,1219.0,45.0,30935.0,installations,2.2,2.3,6.5,4.3,99.1
+SUD OUEST,94.0,82.0,15.0,296.0,172.0,72.0,4656.0,installations,0.3,0.3,1.1,0.7,14.4
+SUD,399.0,650.0,-39.0,1418.0,966.0,47.0,22507.0,installations,1.5,2.3,5.5,3.5,71.3

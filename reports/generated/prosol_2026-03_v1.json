@@ -1,0 +1,2338 @@
+{
+  "scope": "rooftop_pv",
+  "report_period": "2026-03",
+  "emission_date": "11/05/2026",
+  "source_file": "prosol_mars_2026_1.txt",
+  "reconciliation": {
+    "district_count": 50,
+    "pending_dossier_count": 50,
+    "duplicate_districts": [],
+    "missing_pending_rows": [],
+    "installations": {
+      "current_month": 3211.0,
+      "current_year_to_date": 9340.0,
+      "since_program_start": 144979.0
+    },
+    "installed_power_mw": {
+      "current_month": 11.7,
+      "current_year_to_date": 33.8,
+      "since_program_start": 455.7
+    },
+    "pending_dossiers": {
+      "current_year_to_date": 3171,
+      "since_2018": 5475
+    },
+    "expected": {
+      "installations": {
+        "current_month": 3211,
+        "current_year_to_date": 9340,
+        "since_program_start": 144979
+      },
+      "installed_power_mw": {
+        "current_month": 11.8,
+        "current_year_to_date": 33.8,
+        "since_program_start": 456.0
+      },
+      "pending_dossiers": {
+        "current_year_to_date": 3171,
+        "since_2018": 5475
+      }
+    },
+    "district_power_gap_mw": {
+      "current_month": 0.1,
+      "current_year_to_date": 0.0,
+      "since_program_start": 0.3
+    },
+    "power_gap_within_report_tolerance": true,
+    "passed": true
+  },
+  "national_rows": [
+    {
+      "name": "Nombre d’installations PV",
+      "current_month": 3211.0,
+      "previous_year_month": 3642.0,
+      "variance_month_pct": -12.0,
+      "current_year_to_date": 9340.0,
+      "previous_year_to_date": 6225.0,
+      "variance_ytd_pct": 50.0,
+      "since_program_start": 144979.0,
+      "unit": "reported"
+    },
+    {
+      "name": "Puissance installée (MW)",
+      "current_month": 11.8,
+      "previous_year_month": 12.5,
+      "variance_month_pct": -6.0,
+      "current_year_to_date": 33.8,
+      "previous_year_to_date": 22.4,
+      "variance_ytd_pct": 51.0,
+      "since_program_start": 456.0,
+      "unit": "reported"
+    },
+    {
+      "name": "Production des IPV (GWh)",
+      "current_month": 62.0,
+      "previous_year_month": 43.4,
+      "variance_month_pct": 43.0,
+      "current_year_to_date": 175.2,
+      "previous_year_to_date": 122.1,
+      "variance_ytd_pct": 43.0,
+      "since_program_start": 2358.3,
+      "unit": "reported"
+    },
+    {
+      "name": "Production STEG Evitée (GWh)",
+      "current_month": 74.4,
+      "previous_year_month": 52.1,
+      "variance_month_pct": 43.0,
+      "current_year_to_date": 210.2,
+      "previous_year_to_date": 146.6,
+      "variance_ytd_pct": 43.0,
+      "since_program_start": 2830.0,
+      "unit": "reported"
+    },
+    {
+      "name": "Energie Injectée dans le réseau (GWh)",
+      "current_month": 35.8,
+      "previous_year_month": 22.4,
+      "variance_month_pct": 60.0,
+      "current_year_to_date": 113.9,
+      "previous_year_to_date": 77.5,
+      "variance_ytd_pct": 47.0,
+      "since_program_start": 1511.1,
+      "unit": "reported"
+    },
+    {
+      "name": "Combustible évité (ktep)",
+      "current_month": 14.5,
+      "previous_year_month": 9.9,
+      "variance_month_pct": 46.0,
+      "current_year_to_date": 40.9,
+      "previous_year_to_date": 27.8,
+      "variance_ytd_pct": 47.0,
+      "since_program_start": 574.8,
+      "unit": "reported"
+    },
+    {
+      "name": "Coût du combustible évité (MDT)",
+      "current_month": 16.8,
+      "previous_year_month": 13.2,
+      "variance_month_pct": 28.0,
+      "current_year_to_date": 47.6,
+      "previous_year_to_date": 37.9,
+      "variance_ytd_pct": 26.0,
+      "since_program_start": 635.2,
+      "unit": "reported"
+    },
+    {
+      "name": "Emissions de CO2 évités (ktonne)",
+      "current_month": 34.0,
+      "previous_year_month": 23.3,
+      "variance_month_pct": 46.0,
+      "current_year_to_date": 96.2,
+      "previous_year_to_date": 65.3,
+      "variance_ytd_pct": 47.0,
+      "since_program_start": 1350.1,
+      "unit": "reported"
+    }
+  ],
+  "directions": [
+    {
+      "name": "TUNIS",
+      "current_month": 717.0,
+      "previous_year_month": 488.0,
+      "variance_month_pct": 47.0,
+      "current_year_to_date": 1723.0,
+      "previous_year_to_date": 1094.0,
+      "variance_ytd_pct": 57.0,
+      "since_program_start": 28538.0,
+      "unit": "installations"
+    },
+    {
+      "name": "NORD",
+      "current_month": 516.0,
+      "previous_year_month": 590.0,
+      "variance_month_pct": -13.0,
+      "current_year_to_date": 1289.0,
+      "previous_year_to_date": 936.0,
+      "variance_ytd_pct": 38.0,
+      "since_program_start": 17294.0,
+      "unit": "installations"
+    },
+    {
+      "name": "NORD OUEST",
+      "current_month": 141.0,
+      "previous_year_month": 196.0,
+      "variance_month_pct": -28.0,
+      "current_year_to_date": 334.0,
+      "previous_year_to_date": 318.0,
+      "variance_ytd_pct": 5.0,
+      "since_program_start": 7364.0,
+      "unit": "installations"
+    },
+    {
+      "name": "CENTRE",
+      "current_month": 754.0,
+      "previous_year_month": 949.0,
+      "variance_month_pct": -21.0,
+      "current_year_to_date": 2508.0,
+      "previous_year_to_date": 1520.0,
+      "variance_ytd_pct": 65.0,
+      "since_program_start": 33685.0,
+      "unit": "installations"
+    },
+    {
+      "name": "SFAX",
+      "current_month": 590.0,
+      "previous_year_month": 687.0,
+      "variance_month_pct": -14.0,
+      "current_year_to_date": 1772.0,
+      "previous_year_to_date": 1219.0,
+      "variance_ytd_pct": 45.0,
+      "since_program_start": 30935.0,
+      "unit": "installations"
+    },
+    {
+      "name": "SUD OUEST",
+      "current_month": 94.0,
+      "previous_year_month": 82.0,
+      "variance_month_pct": 15.0,
+      "current_year_to_date": 296.0,
+      "previous_year_to_date": 172.0,
+      "variance_ytd_pct": 72.0,
+      "since_program_start": 4656.0,
+      "unit": "installations"
+    },
+    {
+      "name": "SUD",
+      "current_month": 399.0,
+      "previous_year_month": 650.0,
+      "variance_month_pct": -39.0,
+      "current_year_to_date": 1418.0,
+      "previous_year_to_date": 966.0,
+      "variance_ytd_pct": 47.0,
+      "since_program_start": 22507.0,
+      "unit": "installations"
+    }
+  ],
+  "direction_power": [
+    {
+      "name": "TUNIS",
+      "current_month": 2.6,
+      "previous_year_month": 1.9,
+      "variance_month_pct": 41.0,
+      "current_year_to_date": 6.3,
+      "previous_year_to_date": 4.4,
+      "variance_ytd_pct": 44.0,
+      "since_program_start": 95.7,
+      "unit": "MW"
+    },
+    {
+      "name": "NORD",
+      "current_month": 2.0,
+      "previous_year_month": 2.0,
+      "variance_month_pct": 0.0,
+      "current_year_to_date": 4.6,
+      "previous_year_to_date": 3.2,
+      "variance_ytd_pct": 41.0,
+      "since_program_start": 53.4,
+      "unit": "MW"
+    },
+    {
+      "name": "NORD OUEST",
+      "current_month": 0.5,
+      "previous_year_month": 0.6,
+      "variance_month_pct": -27.0,
+      "current_year_to_date": 1.1,
+      "previous_year_to_date": 1.0,
+      "variance_ytd_pct": 7.0,
+      "since_program_start": 20.5,
+      "unit": "MW"
+    },
+    {
+      "name": "CENTRE",
+      "current_month": 2.7,
+      "previous_year_month": 3.2,
+      "variance_month_pct": -16.0,
+      "current_year_to_date": 8.9,
+      "previous_year_to_date": 5.3,
+      "variance_ytd_pct": 68.0,
+      "since_program_start": 101.5,
+      "unit": "MW"
+    },
+    {
+      "name": "SFAX",
+      "current_month": 2.2,
+      "previous_year_month": 2.3,
+      "variance_month_pct": -7.0,
+      "current_year_to_date": 6.5,
+      "previous_year_to_date": 4.3,
+      "variance_ytd_pct": 51.0,
+      "since_program_start": 99.1,
+      "unit": "MW"
+    },
+    {
+      "name": "SUD OUEST",
+      "current_month": 0.3,
+      "previous_year_month": 0.3,
+      "variance_month_pct": 22.0,
+      "current_year_to_date": 1.1,
+      "previous_year_to_date": 0.7,
+      "variance_ytd_pct": 50.0,
+      "since_program_start": 14.4,
+      "unit": "MW"
+    },
+    {
+      "name": "SUD",
+      "current_month": 1.5,
+      "previous_year_month": 2.3,
+      "variance_month_pct": -32.0,
+      "current_year_to_date": 5.5,
+      "previous_year_to_date": 3.5,
+      "variance_ytd_pct": 56.0,
+      "since_program_start": 71.3,
+      "unit": "MW"
+    }
+  ],
+  "districts": [
+    {
+      "name": "TUNIS VILLE",
+      "current_month": 44.0,
+      "previous_year_month": 25.0,
+      "variance_month_pct": 76.0,
+      "current_year_to_date": 83.0,
+      "previous_year_to_date": 64.0,
+      "variance_ytd_pct": 30.0,
+      "since_program_start": 1923.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "TUNIS VILLE",
+        "current_month": 0.2,
+        "previous_year_month": 0.1,
+        "variance_month_pct": 24.0,
+        "current_year_to_date": 0.3,
+        "previous_year_to_date": 0.3,
+        "variance_ytd_pct": 2.0,
+        "since_program_start": 8.1,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "TUNIS VILLE",
+        "current_year_to_date": 33,
+        "previous_year_to_date": 5,
+        "variance_ytd_pct": 560.0,
+        "since_2018": 38,
+        "share_pct": 0.7
+      }
+    },
+    {
+      "name": "ARIANA",
+      "current_month": 111.0,
+      "previous_year_month": 57.0,
+      "variance_month_pct": 95.0,
+      "current_year_to_date": 316.0,
+      "previous_year_to_date": 212.0,
+      "variance_ytd_pct": 49.0,
+      "since_program_start": 5688.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "ARIANA",
+        "current_month": 0.5,
+        "previous_year_month": 0.2,
+        "variance_month_pct": 94.0,
+        "current_year_to_date": 1.2,
+        "previous_year_to_date": 0.9,
+        "variance_ytd_pct": 35.0,
+        "since_program_start": 19.9,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "ARIANA",
+        "current_year_to_date": 81,
+        "previous_year_to_date": 56,
+        "variance_ytd_pct": 45.0,
+        "since_2018": 139,
+        "share_pct": 2.5
+      }
+    },
+    {
+      "name": "EZZAHRA",
+      "current_month": 200.0,
+      "previous_year_month": 111.0,
+      "variance_month_pct": 80.0,
+      "current_year_to_date": 249.0,
+      "previous_year_to_date": 120.0,
+      "variance_ytd_pct": 108.0,
+      "since_program_start": 4509.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "EZZAHRA",
+        "current_month": 0.6,
+        "previous_year_month": 0.4,
+        "variance_month_pct": 64.0,
+        "current_year_to_date": 0.8,
+        "previous_year_to_date": 0.4,
+        "variance_ytd_pct": 95.0,
+        "since_program_start": 13.3,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "EZZAHRA",
+        "current_year_to_date": 66,
+        "previous_year_to_date": 80,
+        "variance_ytd_pct": -18.0,
+        "since_2018": 201,
+        "share_pct": 3.7
+      }
+    },
+    {
+      "name": "MOUROUJ",
+      "current_month": 39.0,
+      "previous_year_month": 48.0,
+      "variance_month_pct": -19.0,
+      "current_year_to_date": 153.0,
+      "previous_year_to_date": 98.0,
+      "variance_ytd_pct": 56.0,
+      "since_program_start": 2287.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "MOUROUJ",
+        "current_month": 0.1,
+        "previous_year_month": 0.2,
+        "variance_month_pct": -24.0,
+        "current_year_to_date": 0.5,
+        "previous_year_to_date": 0.3,
+        "variance_ytd_pct": 55.0,
+        "since_program_start": 6.8,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "MOUROUJ",
+        "current_year_to_date": 67,
+        "previous_year_to_date": 24,
+        "variance_ytd_pct": 179.0,
+        "since_2018": 91,
+        "share_pct": 1.7
+      }
+    },
+    {
+      "name": "KRAM",
+      "current_month": 107.0,
+      "previous_year_month": 59.0,
+      "variance_month_pct": 81.0,
+      "current_year_to_date": 349.0,
+      "previous_year_to_date": 172.0,
+      "variance_ytd_pct": 103.0,
+      "since_program_start": 4820.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "KRAM",
+        "current_month": 0.4,
+        "previous_year_month": 0.3,
+        "variance_month_pct": 75.0,
+        "current_year_to_date": 1.3,
+        "previous_year_to_date": 0.8,
+        "variance_ytd_pct": 69.0,
+        "since_program_start": 17.8,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "KRAM",
+        "current_year_to_date": 136,
+        "previous_year_to_date": 117,
+        "variance_ytd_pct": 16.0,
+        "since_2018": 276,
+        "share_pct": 5.0
+      }
+    },
+    {
+      "name": "BARDO",
+      "current_month": 59.0,
+      "previous_year_month": 67.0,
+      "variance_month_pct": -12.0,
+      "current_year_to_date": 198.0,
+      "previous_year_to_date": 121.0,
+      "variance_ytd_pct": 64.0,
+      "since_program_start": 2667.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "BARDO",
+        "current_month": 0.2,
+        "previous_year_month": 0.2,
+        "variance_month_pct": -12.0,
+        "current_year_to_date": 0.7,
+        "previous_year_to_date": 0.4,
+        "variance_ytd_pct": 75.0,
+        "since_program_start": 8.1,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "BARDO",
+        "current_year_to_date": 155,
+        "previous_year_to_date": 47,
+        "variance_ytd_pct": 230.0,
+        "since_2018": 245,
+        "share_pct": 4.5
+      }
+    },
+    {
+      "name": "MANNOUBA",
+      "current_month": 97.0,
+      "previous_year_month": 60.0,
+      "variance_month_pct": 62.0,
+      "current_year_to_date": 209.0,
+      "previous_year_to_date": 140.0,
+      "variance_ytd_pct": 49.0,
+      "since_program_start": 2559.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "MANNOUBA",
+        "current_month": 0.3,
+        "previous_year_month": 0.2,
+        "variance_month_pct": 41.0,
+        "current_year_to_date": 0.7,
+        "previous_year_to_date": 0.5,
+        "variance_ytd_pct": 35.0,
+        "since_program_start": 8.0,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "MANNOUBA",
+        "current_year_to_date": 43,
+        "previous_year_to_date": 5,
+        "variance_ytd_pct": 760.0,
+        "since_2018": 49,
+        "share_pct": 0.9
+      }
+    },
+    {
+      "name": "EL MENZAH",
+      "current_month": 60.0,
+      "previous_year_month": 61.0,
+      "variance_month_pct": -2.0,
+      "current_year_to_date": 166.0,
+      "previous_year_to_date": 167.0,
+      "variance_ytd_pct": -1.0,
+      "since_program_start": 4085.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "EL MENZAH",
+        "current_month": 0.3,
+        "previous_year_month": 0.2,
+        "variance_month_pct": 21.0,
+        "current_year_to_date": 0.7,
+        "previous_year_to_date": 0.7,
+        "variance_ytd_pct": 2.0,
+        "since_program_start": 13.7,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "EL MENZAH",
+        "current_year_to_date": 78,
+        "previous_year_to_date": 25,
+        "variance_ytd_pct": 212.0,
+        "since_2018": 103,
+        "share_pct": 1.9
+      }
+    },
+    {
+      "name": "ZAGHOUAN",
+      "current_month": 28.0,
+      "previous_year_month": 38.0,
+      "variance_month_pct": -26.0,
+      "current_year_to_date": 72.0,
+      "previous_year_to_date": 64.0,
+      "variance_ytd_pct": 13.0,
+      "since_program_start": 974.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "ZAGHOUAN",
+        "current_month": 0.1,
+        "previous_year_month": 0.1,
+        "variance_month_pct": -14.0,
+        "current_year_to_date": 0.3,
+        "previous_year_to_date": 0.2,
+        "variance_ytd_pct": 21.0,
+        "since_program_start": 3.0,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "ZAGHOUAN",
+        "current_year_to_date": 34,
+        "previous_year_to_date": 26,
+        "variance_ytd_pct": 31.0,
+        "since_2018": 111,
+        "share_pct": 2.0
+      }
+    },
+    {
+      "name": "BIZERTE",
+      "current_month": 95.0,
+      "previous_year_month": 55.0,
+      "variance_month_pct": 73.0,
+      "current_year_to_date": 196.0,
+      "previous_year_to_date": 101.0,
+      "variance_ytd_pct": 94.0,
+      "since_program_start": 3402.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "BIZERTE",
+        "current_month": 0.4,
+        "previous_year_month": 0.2,
+        "variance_month_pct": 129.0,
+        "current_year_to_date": 0.7,
+        "previous_year_to_date": 0.3,
+        "variance_ytd_pct": 113.0,
+        "since_program_start": 10.3,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "BIZERTE",
+        "current_year_to_date": 43,
+        "previous_year_to_date": 6,
+        "variance_ytd_pct": 617.0,
+        "since_2018": 49,
+        "share_pct": 0.9
+      }
+    },
+    {
+      "name": "MENZEL BOURGUIBA",
+      "current_month": 9.0,
+      "previous_year_month": 17.0,
+      "variance_month_pct": -47.0,
+      "current_year_to_date": 51.0,
+      "previous_year_to_date": 44.0,
+      "variance_ytd_pct": 16.0,
+      "since_program_start": 709.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "MENZEL BOURGUIBA",
+        "current_month": 0.0,
+        "previous_year_month": 0.1,
+        "variance_month_pct": -30.0,
+        "current_year_to_date": 0.2,
+        "previous_year_to_date": 0.2,
+        "variance_ytd_pct": 18.0,
+        "since_program_start": 2.2,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "MENZEL BOURGUIBA",
+        "current_year_to_date": 10,
+        "previous_year_to_date": 2,
+        "variance_ytd_pct": 400.0,
+        "since_2018": 12,
+        "share_pct": 0.2
+      }
+    },
+    {
+      "name": "NABEUL",
+      "current_month": 99.0,
+      "previous_year_month": 171.0,
+      "variance_month_pct": -42.0,
+      "current_year_to_date": 333.0,
+      "previous_year_to_date": 265.0,
+      "variance_ytd_pct": 26.0,
+      "since_program_start": 4344.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "NABEUL",
+        "current_month": 0.4,
+        "previous_year_month": 0.6,
+        "variance_month_pct": -32.0,
+        "current_year_to_date": 1.1,
+        "previous_year_to_date": 0.9,
+        "variance_ytd_pct": 22.0,
+        "since_program_start": 13.5,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "NABEUL",
+        "current_year_to_date": 175,
+        "previous_year_to_date": 117,
+        "variance_ytd_pct": 50.0,
+        "since_2018": 395,
+        "share_pct": 7.2
+      }
+    },
+    {
+      "name": "MENZEL B-ZELFA",
+      "current_month": 80.0,
+      "previous_year_month": 93.0,
+      "variance_month_pct": -14.0,
+      "current_year_to_date": 228.0,
+      "previous_year_to_date": 150.0,
+      "variance_ytd_pct": 52.0,
+      "since_program_start": 2688.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "MENZEL B-ZELFA",
+        "current_month": 0.3,
+        "previous_year_month": 0.3,
+        "variance_month_pct": -2.0,
+        "current_year_to_date": 0.8,
+        "previous_year_to_date": 0.5,
+        "variance_ytd_pct": 63.0,
+        "since_program_start": 7.9,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "MENZEL B-ZELFA",
+        "current_year_to_date": 88,
+        "previous_year_to_date": 28,
+        "variance_ytd_pct": 214.0,
+        "since_2018": 118,
+        "share_pct": 2.2
+      }
+    },
+    {
+      "name": "MENZEL TEMIME",
+      "current_month": 72.0,
+      "previous_year_month": 168.0,
+      "variance_month_pct": -57.0,
+      "current_year_to_date": 207.0,
+      "previous_year_to_date": 219.0,
+      "variance_ytd_pct": -5.0,
+      "since_program_start": 2878.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "MENZEL TEMIME",
+        "current_month": 0.3,
+        "previous_year_month": 0.6,
+        "variance_month_pct": -52.0,
+        "current_year_to_date": 0.7,
+        "previous_year_to_date": 0.8,
+        "variance_ytd_pct": -3.0,
+        "since_program_start": 9.2,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "MENZEL TEMIME",
+        "current_year_to_date": 72,
+        "previous_year_to_date": 38,
+        "variance_ytd_pct": 89.0,
+        "since_2018": 110,
+        "share_pct": 2.0
+      }
+    },
+    {
+      "name": "HAMMAMET",
+      "current_month": 133.0,
+      "previous_year_month": 48.0,
+      "variance_month_pct": 177.0,
+      "current_year_to_date": 202.0,
+      "previous_year_to_date": 93.0,
+      "variance_ytd_pct": 117.0,
+      "since_program_start": 2299.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "HAMMAMET",
+        "current_month": 0.5,
+        "previous_year_month": 0.2,
+        "variance_month_pct": 148.0,
+        "current_year_to_date": 0.7,
+        "previous_year_to_date": 0.3,
+        "variance_ytd_pct": 115.0,
+        "since_program_start": 7.5,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "HAMMAMET",
+        "current_year_to_date": 168,
+        "previous_year_to_date": 51,
+        "variance_ytd_pct": 229.0,
+        "since_2018": 271,
+        "share_pct": 4.9
+      }
+    },
+    {
+      "name": "BEJA",
+      "current_month": 44.0,
+      "previous_year_month": 86.0,
+      "variance_month_pct": -49.0,
+      "current_year_to_date": 109.0,
+      "previous_year_to_date": 92.0,
+      "variance_ytd_pct": 18.0,
+      "since_program_start": 4185.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "BEJA",
+        "current_month": 0.1,
+        "previous_year_month": 0.3,
+        "variance_month_pct": -44.0,
+        "current_year_to_date": 0.4,
+        "previous_year_to_date": 0.3,
+        "variance_ytd_pct": 29.0,
+        "since_program_start": 10.8,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "BEJA",
+        "current_year_to_date": 11,
+        "previous_year_to_date": 10,
+        "variance_ytd_pct": 10.0,
+        "since_2018": 21,
+        "share_pct": 0.4
+      }
+    },
+    {
+      "name": "JENDOUBA",
+      "current_month": 41.0,
+      "previous_year_month": 38.0,
+      "variance_month_pct": 8.0,
+      "current_year_to_date": 99.0,
+      "previous_year_to_date": 81.0,
+      "variance_ytd_pct": 22.0,
+      "since_program_start": 918.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "JENDOUBA",
+        "current_month": 0.1,
+        "previous_year_month": 0.2,
+        "variance_month_pct": -11.0,
+        "current_year_to_date": 0.3,
+        "previous_year_to_date": 0.3,
+        "variance_ytd_pct": 10.0,
+        "since_program_start": 3.1,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "JENDOUBA",
+        "current_year_to_date": 4,
+        "previous_year_to_date": 2,
+        "variance_ytd_pct": 100.0,
+        "since_2018": 6,
+        "share_pct": 0.1
+      }
+    },
+    {
+      "name": "KEF",
+      "current_month": 29.0,
+      "previous_year_month": 43.0,
+      "variance_month_pct": -33.0,
+      "current_year_to_date": 72.0,
+      "previous_year_to_date": 99.0,
+      "variance_ytd_pct": -27.0,
+      "since_program_start": 1361.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "KEF",
+        "current_month": 0.1,
+        "previous_year_month": 0.1,
+        "variance_month_pct": -34.0,
+        "current_year_to_date": 0.2,
+        "previous_year_to_date": 0.3,
+        "variance_ytd_pct": -29.0,
+        "since_program_start": 3.8,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "KEF",
+        "current_year_to_date": 20,
+        "previous_year_to_date": 10,
+        "variance_ytd_pct": 100.0,
+        "since_2018": 31,
+        "share_pct": 0.6
+      }
+    },
+    {
+      "name": "SILIANA",
+      "current_month": 15.0,
+      "previous_year_month": 18.0,
+      "variance_month_pct": -17.0,
+      "current_year_to_date": 32.0,
+      "previous_year_to_date": 30.0,
+      "variance_ytd_pct": 7.0,
+      "since_program_start": 546.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "SILIANA",
+        "current_month": 0.1,
+        "previous_year_month": 0.1,
+        "variance_month_pct": -5.0,
+        "current_year_to_date": 0.1,
+        "previous_year_to_date": 0.1,
+        "variance_ytd_pct": 46.0,
+        "since_program_start": 1.7,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "SILIANA",
+        "current_year_to_date": 21,
+        "previous_year_to_date": 10,
+        "variance_ytd_pct": 110.0,
+        "since_2018": 55,
+        "share_pct": 1.0
+      }
+    },
+    {
+      "name": "TABARKA",
+      "current_month": 12.0,
+      "previous_year_month": 11.0,
+      "variance_month_pct": 9.0,
+      "current_year_to_date": 22.0,
+      "previous_year_to_date": 16.0,
+      "variance_ytd_pct": 38.0,
+      "since_program_start": 354.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "TABARKA",
+        "current_month": 0.0,
+        "previous_year_month": 0.0,
+        "variance_month_pct": 9.0,
+        "current_year_to_date": 0.1,
+        "previous_year_to_date": 0.1,
+        "variance_ytd_pct": 22.0,
+        "since_program_start": 1.0,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "TABARKA",
+        "current_year_to_date": 2,
+        "previous_year_to_date": 1,
+        "variance_ytd_pct": 100.0,
+        "since_2018": 3,
+        "share_pct": 0.1
+      }
+    },
+    {
+      "name": "SOUSSE",
+      "current_month": 125.0,
+      "previous_year_month": 124.0,
+      "variance_month_pct": 1.0,
+      "current_year_to_date": 300.0,
+      "previous_year_to_date": 179.0,
+      "variance_ytd_pct": 68.0,
+      "since_program_start": 4633.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "SOUSSE",
+        "current_month": 0.5,
+        "previous_year_month": 0.4,
+        "variance_month_pct": 9.0,
+        "current_year_to_date": 1.1,
+        "previous_year_to_date": 0.6,
+        "variance_ytd_pct": 65.0,
+        "since_program_start": 12.5,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "SOUSSE",
+        "current_year_to_date": 44,
+        "previous_year_to_date": 3,
+        "variance_ytd_pct": 1367.0,
+        "since_2018": 47,
+        "share_pct": 0.9
+      }
+    },
+    {
+      "name": "SOUSSE NORD",
+      "current_month": 82.0,
+      "previous_year_month": 139.0,
+      "variance_month_pct": -41.0,
+      "current_year_to_date": 318.0,
+      "previous_year_to_date": 163.0,
+      "variance_ytd_pct": 95.0,
+      "since_program_start": 4942.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "SOUSSE NORD",
+        "current_month": 0.3,
+        "previous_year_month": 0.5,
+        "variance_month_pct": -46.0,
+        "current_year_to_date": 1.1,
+        "previous_year_to_date": 0.6,
+        "variance_ytd_pct": 92.0,
+        "since_program_start": 15.8,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "SOUSSE NORD",
+        "current_year_to_date": 51,
+        "previous_year_to_date": 45,
+        "variance_ytd_pct": 13.0,
+        "since_2018": 129,
+        "share_pct": 2.4
+      }
+    },
+    {
+      "name": "MONASTIR",
+      "current_month": 126.0,
+      "previous_year_month": 185.0,
+      "variance_month_pct": -32.0,
+      "current_year_to_date": 368.0,
+      "previous_year_to_date": 261.0,
+      "variance_ytd_pct": 41.0,
+      "since_program_start": 5087.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "MONASTIR",
+        "current_month": 0.5,
+        "previous_year_month": 0.7,
+        "variance_month_pct": -28.0,
+        "current_year_to_date": 1.3,
+        "previous_year_to_date": 1.0,
+        "variance_ytd_pct": 37.0,
+        "since_program_start": 16.5,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "MONASTIR",
+        "current_year_to_date": 89,
+        "previous_year_to_date": 54,
+        "variance_ytd_pct": 65.0,
+        "since_2018": 168,
+        "share_pct": 3.1
+      }
+    },
+    {
+      "name": "MOKNINE",
+      "current_month": 117.0,
+      "previous_year_month": 259.0,
+      "variance_month_pct": -55.0,
+      "current_year_to_date": 551.0,
+      "previous_year_to_date": 427.0,
+      "variance_ytd_pct": 29.0,
+      "since_program_start": 7242.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "MOKNINE",
+        "current_month": 0.4,
+        "previous_year_month": 0.8,
+        "variance_month_pct": -50.0,
+        "current_year_to_date": 2.0,
+        "previous_year_to_date": 1.4,
+        "variance_ytd_pct": 43.0,
+        "since_program_start": 22.4,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "MOKNINE",
+        "current_year_to_date": 209,
+        "previous_year_to_date": 34,
+        "variance_ytd_pct": 515.0,
+        "since_2018": 245,
+        "share_pct": 4.5
+      }
+    },
+    {
+      "name": "MAHDIA",
+      "current_month": 109.0,
+      "previous_year_month": 89.0,
+      "variance_month_pct": 22.0,
+      "current_year_to_date": 295.0,
+      "previous_year_to_date": 189.0,
+      "variance_ytd_pct": 56.0,
+      "since_program_start": 4293.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "MAHDIA",
+        "current_month": 0.4,
+        "previous_year_month": 0.3,
+        "variance_month_pct": 26.0,
+        "current_year_to_date": 1.0,
+        "previous_year_to_date": 0.6,
+        "variance_ytd_pct": 54.0,
+        "since_program_start": 12.4,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "MAHDIA",
+        "current_year_to_date": 62,
+        "previous_year_to_date": 11,
+        "variance_ytd_pct": 464.0,
+        "since_2018": 79,
+        "share_pct": 1.4
+      }
+    },
+    {
+      "name": "KAIROUAN",
+      "current_month": 33.0,
+      "previous_year_month": 20.0,
+      "variance_month_pct": 65.0,
+      "current_year_to_date": 123.0,
+      "previous_year_to_date": 69.0,
+      "variance_ytd_pct": 78.0,
+      "since_program_start": 1780.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "KAIROUAN",
+        "current_month": 0.1,
+        "previous_year_month": 0.1,
+        "variance_month_pct": 69.0,
+        "current_year_to_date": 0.4,
+        "previous_year_to_date": 0.3,
+        "variance_ytd_pct": 65.0,
+        "since_program_start": 5.3,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "KAIROUAN",
+        "current_year_to_date": 25,
+        "previous_year_to_date": 21,
+        "variance_ytd_pct": 19.0,
+        "since_2018": 98,
+        "share_pct": 1.8
+      }
+    },
+    {
+      "name": "KAIROUAN NORD",
+      "current_month": 8.0,
+      "previous_year_month": 16.0,
+      "variance_month_pct": -50.0,
+      "current_year_to_date": 42.0,
+      "previous_year_to_date": 25.0,
+      "variance_ytd_pct": 68.0,
+      "since_program_start": 1028.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "KAIROUAN NORD",
+        "current_month": 0.0,
+        "previous_year_month": 0.0,
+        "variance_month_pct": -37.0,
+        "current_year_to_date": 0.1,
+        "previous_year_to_date": 0.1,
+        "variance_ytd_pct": 99.0,
+        "since_program_start": 2.9,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "KAIROUAN NORD",
+        "current_year_to_date": 9,
+        "previous_year_to_date": 7,
+        "variance_ytd_pct": 29.0,
+        "since_2018": 16,
+        "share_pct": 0.3
+      }
+    },
+    {
+      "name": "EL JEM",
+      "current_month": 46.0,
+      "previous_year_month": 52.0,
+      "variance_month_pct": -12.0,
+      "current_year_to_date": 211.0,
+      "previous_year_to_date": 75.0,
+      "variance_ytd_pct": 181.0,
+      "since_program_start": 1672.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "EL JEM",
+        "current_month": 0.1,
+        "previous_year_month": 0.2,
+        "variance_month_pct": -12.0,
+        "current_year_to_date": 0.7,
+        "previous_year_to_date": 0.2,
+        "variance_ytd_pct": 204.0,
+        "since_program_start": 4.7,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "EL JEM",
+        "current_year_to_date": 36,
+        "previous_year_to_date": 33,
+        "variance_ytd_pct": 9.0,
+        "since_2018": 109,
+        "share_pct": 2.0
+      }
+    },
+    {
+      "name": "KASSERINE",
+      "current_month": 7.0,
+      "previous_year_month": 19.0,
+      "variance_month_pct": -63.0,
+      "current_year_to_date": 40.0,
+      "previous_year_to_date": 27.0,
+      "variance_ytd_pct": 48.0,
+      "since_program_start": 320.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "KASSERINE",
+        "current_month": 0.0,
+        "previous_year_month": 0.1,
+        "variance_month_pct": -39.0,
+        "current_year_to_date": 0.2,
+        "previous_year_to_date": 0.1,
+        "variance_ytd_pct": 92.0,
+        "since_program_start": 1.2,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "KASSERINE",
+        "current_year_to_date": 5,
+        "previous_year_to_date": 1,
+        "variance_ytd_pct": 400.0,
+        "since_2018": 6,
+        "share_pct": 0.1
+      }
+    },
+    {
+      "name": "SIDI-BOUZID",
+      "current_month": 27.0,
+      "previous_year_month": 21.0,
+      "variance_month_pct": 29.0,
+      "current_year_to_date": 74.0,
+      "previous_year_to_date": 48.0,
+      "variance_ytd_pct": 54.0,
+      "since_program_start": 833.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "SIDI-BOUZID",
+        "current_month": 0.1,
+        "previous_year_month": 0.1,
+        "variance_month_pct": 28.0,
+        "current_year_to_date": 0.3,
+        "previous_year_to_date": 0.2,
+        "variance_ytd_pct": 42.0,
+        "since_program_start": 3.2,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "SIDI-BOUZID",
+        "current_year_to_date": 20,
+        "previous_year_to_date": 8,
+        "variance_ytd_pct": 150.0,
+        "since_2018": 35,
+        "share_pct": 0.6
+      }
+    },
+    {
+      "name": "GAFSA",
+      "current_month": 23.0,
+      "previous_year_month": 16.0,
+      "variance_month_pct": 44.0,
+      "current_year_to_date": 90.0,
+      "previous_year_to_date": 57.0,
+      "variance_ytd_pct": 58.0,
+      "since_program_start": 1162.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "GAFSA",
+        "current_month": 0.1,
+        "previous_year_month": 0.1,
+        "variance_month_pct": 56.0,
+        "current_year_to_date": 0.3,
+        "previous_year_to_date": 0.3,
+        "variance_ytd_pct": 7.0,
+        "since_program_start": 3.7,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "GAFSA",
+        "current_year_to_date": 27,
+        "previous_year_to_date": 44,
+        "variance_ytd_pct": -39.0,
+        "since_2018": 107,
+        "share_pct": 2.0
+      }
+    },
+    {
+      "name": "METLAOUI",
+      "current_month": 8.0,
+      "previous_year_month": 1.0,
+      "variance_month_pct": 700.0,
+      "current_year_to_date": 19.0,
+      "previous_year_to_date": 5.0,
+      "variance_ytd_pct": 280.0,
+      "since_program_start": 244.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "METLAOUI",
+        "current_month": 0.0,
+        "previous_year_month": 0.0,
+        "variance_month_pct": 567.0,
+        "current_year_to_date": 0.1,
+        "previous_year_to_date": 0.0,
+        "variance_ytd_pct": 195.0,
+        "since_program_start": 0.7,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "METLAOUI",
+        "current_year_to_date": 10,
+        "previous_year_to_date": 1,
+        "variance_ytd_pct": 900.0,
+        "since_2018": 11,
+        "share_pct": 0.2
+      }
+    },
+    {
+      "name": "TOZEUR",
+      "current_month": 3.0,
+      "previous_year_month": 22.0,
+      "variance_month_pct": -86.0,
+      "current_year_to_date": 17.0,
+      "previous_year_to_date": 28.0,
+      "variance_ytd_pct": -39.0,
+      "since_program_start": 1796.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "TOZEUR",
+        "current_month": 0.0,
+        "previous_year_month": 0.1,
+        "variance_month_pct": -90.0,
+        "current_year_to_date": 0.1,
+        "previous_year_to_date": 0.1,
+        "variance_ytd_pct": -30.0,
+        "since_program_start": 4.6,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "TOZEUR",
+        "current_year_to_date": 15,
+        "previous_year_to_date": 12,
+        "variance_ytd_pct": 25.0,
+        "since_2018": 50,
+        "share_pct": 0.9
+      }
+    },
+    {
+      "name": "MAKNASSY",
+      "current_month": 25.0,
+      "previous_year_month": 1.0,
+      "variance_month_pct": 2400.0,
+      "current_year_to_date": 48.0,
+      "previous_year_to_date": 4.0,
+      "variance_ytd_pct": 1100.0,
+      "since_program_start": 181.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "MAKNASSY",
+        "current_month": 0.1,
+        "previous_year_month": 0.0,
+        "variance_month_pct": 3200.0,
+        "current_year_to_date": 0.2,
+        "previous_year_to_date": 0.0,
+        "variance_ytd_pct": 1179.0,
+        "since_program_start": 0.6,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "MAKNASSY",
+        "current_year_to_date": 5,
+        "previous_year_to_date": 3,
+        "variance_ytd_pct": 67.0,
+        "since_2018": 11,
+        "share_pct": 0.2
+      }
+    },
+    {
+      "name": "SFAX VILLE",
+      "current_month": 85.0,
+      "previous_year_month": 157.0,
+      "variance_month_pct": -46.0,
+      "current_year_to_date": 288.0,
+      "previous_year_to_date": 278.0,
+      "variance_ytd_pct": 4.0,
+      "since_program_start": 6301.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "SFAX VILLE",
+        "current_month": 0.3,
+        "previous_year_month": 0.5,
+        "variance_month_pct": -41.0,
+        "current_year_to_date": 1.1,
+        "previous_year_to_date": 1.0,
+        "variance_ytd_pct": 8.0,
+        "since_program_start": 20.1,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "SFAX VILLE",
+        "current_year_to_date": 94,
+        "previous_year_to_date": 65,
+        "variance_ytd_pct": 45.0,
+        "since_2018": 197,
+        "share_pct": 3.6
+      }
+    },
+    {
+      "name": "JBENIANA",
+      "current_month": 98.0,
+      "previous_year_month": 62.0,
+      "variance_month_pct": 58.0,
+      "current_year_to_date": 237.0,
+      "previous_year_to_date": 79.0,
+      "variance_ytd_pct": 200.0,
+      "since_program_start": 2212.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "JBENIANA",
+        "current_month": 0.3,
+        "previous_year_month": 0.2,
+        "variance_month_pct": 71.0,
+        "current_year_to_date": 0.8,
+        "previous_year_to_date": 0.3,
+        "variance_ytd_pct": 200.0,
+        "since_program_start": 6.5,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "JBENIANA",
+        "current_year_to_date": 48,
+        "previous_year_to_date": 22,
+        "variance_ytd_pct": 118.0,
+        "since_2018": 72,
+        "share_pct": 1.3
+      }
+    },
+    {
+      "name": "SFAX NORD",
+      "current_month": 192.0,
+      "previous_year_month": 295.0,
+      "variance_month_pct": -35.0,
+      "current_year_to_date": 602.0,
+      "previous_year_to_date": 445.0,
+      "variance_ytd_pct": 35.0,
+      "since_program_start": 10112.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "SFAX NORD",
+        "current_month": 0.7,
+        "previous_year_month": 1.0,
+        "variance_month_pct": -26.0,
+        "current_year_to_date": 2.2,
+        "previous_year_to_date": 1.6,
+        "variance_ytd_pct": 44.0,
+        "since_program_start": 32.4,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "SFAX NORD",
+        "current_year_to_date": 158,
+        "previous_year_to_date": 68,
+        "variance_ytd_pct": 132.0,
+        "since_2018": 253,
+        "share_pct": 4.6
+      }
+    },
+    {
+      "name": "MAHRES",
+      "current_month": 57.0,
+      "previous_year_month": 26.0,
+      "variance_month_pct": 119.0,
+      "current_year_to_date": 187.0,
+      "previous_year_to_date": 95.0,
+      "variance_ytd_pct": 97.0,
+      "since_program_start": 3121.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "MAHRES",
+        "current_month": 0.2,
+        "previous_year_month": 0.1,
+        "variance_month_pct": 95.0,
+        "current_year_to_date": 0.7,
+        "previous_year_to_date": 0.3,
+        "variance_ytd_pct": 108.0,
+        "since_program_start": 9.8,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "MAHRES",
+        "current_year_to_date": 19,
+        "previous_year_to_date": 10,
+        "variance_ytd_pct": 90.0,
+        "since_2018": 43,
+        "share_pct": 0.8
+      }
+    },
+    {
+      "name": "SFAX SUD",
+      "current_month": 158.0,
+      "previous_year_month": 147.0,
+      "variance_month_pct": 7.0,
+      "current_year_to_date": 458.0,
+      "previous_year_to_date": 322.0,
+      "variance_ytd_pct": 42.0,
+      "since_program_start": 9189.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "SFAX SUD",
+        "current_month": 0.6,
+        "previous_year_month": 0.5,
+        "variance_month_pct": 18.0,
+        "current_year_to_date": 1.7,
+        "previous_year_to_date": 1.1,
+        "variance_ytd_pct": 46.0,
+        "since_program_start": 30.2,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "SFAX SUD",
+        "current_year_to_date": 167,
+        "previous_year_to_date": 71,
+        "variance_ytd_pct": 135.0,
+        "since_2018": 271,
+        "share_pct": 4.9
+      }
+    },
+    {
+      "name": "GABES",
+      "current_month": 56.0,
+      "previous_year_month": 52.0,
+      "variance_month_pct": 8.0,
+      "current_year_to_date": 201.0,
+      "previous_year_to_date": 123.0,
+      "variance_ytd_pct": 63.0,
+      "since_program_start": 2253.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "GABES",
+        "current_month": 0.2,
+        "previous_year_month": 0.2,
+        "variance_month_pct": 14.0,
+        "current_year_to_date": 0.7,
+        "previous_year_to_date": 0.5,
+        "variance_ytd_pct": 51.0,
+        "since_program_start": 7.4,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "GABES",
+        "current_year_to_date": 126,
+        "previous_year_to_date": 41,
+        "variance_ytd_pct": 207.0,
+        "since_2018": 167,
+        "share_pct": 3.1
+      }
+    },
+    {
+      "name": "KEBILI",
+      "current_month": 38.0,
+      "previous_year_month": 63.0,
+      "variance_month_pct": -40.0,
+      "current_year_to_date": 186.0,
+      "previous_year_to_date": 95.0,
+      "variance_ytd_pct": 96.0,
+      "since_program_start": 3255.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "KEBILI",
+        "current_month": 0.2,
+        "previous_year_month": 0.2,
+        "variance_month_pct": -17.0,
+        "current_year_to_date": 0.8,
+        "previous_year_to_date": 0.3,
+        "variance_ytd_pct": 164.0,
+        "since_program_start": 9.3,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "KEBILI",
+        "current_year_to_date": 188,
+        "previous_year_to_date": 22,
+        "variance_ytd_pct": 755.0,
+        "since_2018": 210,
+        "share_pct": 3.8
+      }
+    },
+    {
+      "name": "ZARZIS",
+      "current_month": 65.0,
+      "previous_year_month": 99.0,
+      "variance_month_pct": -34.0,
+      "current_year_to_date": 131.0,
+      "previous_year_to_date": 112.0,
+      "variance_ytd_pct": 17.0,
+      "since_program_start": 2182.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "ZARZIS",
+        "current_month": 0.3,
+        "previous_year_month": 0.4,
+        "variance_month_pct": -29.0,
+        "current_year_to_date": 0.6,
+        "previous_year_to_date": 0.4,
+        "variance_ytd_pct": 31.0,
+        "since_program_start": 7.7,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "ZARZIS",
+        "current_year_to_date": 54,
+        "previous_year_to_date": 25,
+        "variance_ytd_pct": 116.0,
+        "since_2018": 105,
+        "share_pct": 1.9
+      }
+    },
+    {
+      "name": "MEDNINE",
+      "current_month": 56.0,
+      "previous_year_month": 121.0,
+      "variance_month_pct": -54.0,
+      "current_year_to_date": 186.0,
+      "previous_year_to_date": 157.0,
+      "variance_ytd_pct": 18.0,
+      "since_program_start": 2552.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "MEDNINE",
+        "current_month": 0.2,
+        "previous_year_month": 0.4,
+        "variance_month_pct": -53.0,
+        "current_year_to_date": 0.6,
+        "previous_year_to_date": 0.5,
+        "variance_ytd_pct": 20.0,
+        "since_program_start": 8.3,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "MEDNINE",
+        "current_year_to_date": 12,
+        "previous_year_to_date": 4,
+        "variance_ytd_pct": 200.0,
+        "since_2018": 16,
+        "share_pct": 0.3
+      }
+    },
+    {
+      "name": "JERBA",
+      "current_month": 103.0,
+      "previous_year_month": 153.0,
+      "variance_month_pct": -33.0,
+      "current_year_to_date": 436.0,
+      "previous_year_to_date": 260.0,
+      "variance_ytd_pct": 68.0,
+      "since_program_start": 7488.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "JERBA",
+        "current_month": 0.4,
+        "previous_year_month": 0.6,
+        "variance_month_pct": -37.0,
+        "current_year_to_date": 1.6,
+        "previous_year_to_date": 1.0,
+        "variance_ytd_pct": 62.0,
+        "since_program_start": 23.4,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "JERBA",
+        "current_year_to_date": 227,
+        "previous_year_to_date": 89,
+        "variance_ytd_pct": 155.0,
+        "since_2018": 319,
+        "share_pct": 5.8
+      }
+    },
+    {
+      "name": "TATAOUINE",
+      "current_month": 31.0,
+      "previous_year_month": 77.0,
+      "variance_month_pct": -60.0,
+      "current_year_to_date": 136.0,
+      "previous_year_to_date": 97.0,
+      "variance_ytd_pct": 40.0,
+      "since_program_start": 2155.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "TATAOUINE",
+        "current_month": 0.1,
+        "previous_year_month": 0.2,
+        "variance_month_pct": -51.0,
+        "current_year_to_date": 0.5,
+        "previous_year_to_date": 0.3,
+        "variance_ytd_pct": 55.0,
+        "since_program_start": 6.9,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "TATAOUINE",
+        "current_year_to_date": 14,
+        "previous_year_to_date": 21,
+        "variance_ytd_pct": -33.0,
+        "since_2018": 65,
+        "share_pct": 1.2
+      }
+    },
+    {
+      "name": "BEN GUERDENE",
+      "current_month": 23.0,
+      "previous_year_month": 51.0,
+      "variance_month_pct": -55.0,
+      "current_year_to_date": 56.0,
+      "previous_year_to_date": 57.0,
+      "variance_ytd_pct": -2.0,
+      "since_program_start": 914.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "BEN GUERDENE",
+        "current_month": 0.1,
+        "previous_year_month": 0.2,
+        "variance_month_pct": -42.0,
+        "current_year_to_date": 0.3,
+        "previous_year_to_date": 0.2,
+        "variance_ytd_pct": 25.0,
+        "since_program_start": 3.2,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "BEN GUERDENE",
+        "current_year_to_date": 1,
+        "previous_year_to_date": 17,
+        "variance_ytd_pct": -94.0,
+        "since_2018": 18,
+        "share_pct": 0.3
+      }
+    },
+    {
+      "name": "GABES NORD",
+      "current_month": 27.0,
+      "previous_year_month": 34.0,
+      "variance_month_pct": -21.0,
+      "current_year_to_date": 86.0,
+      "previous_year_to_date": 65.0,
+      "variance_ytd_pct": 32.0,
+      "since_program_start": 1708.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "GABES NORD",
+        "current_month": 0.1,
+        "previous_year_month": 0.1,
+        "variance_month_pct": 16.0,
+        "current_year_to_date": 0.3,
+        "previous_year_to_date": 0.2,
+        "variance_ytd_pct": 61.0,
+        "since_program_start": 5.0,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "GABES NORD",
+        "current_year_to_date": 94,
+        "previous_year_to_date": 52,
+        "variance_ytd_pct": 81.0,
+        "since_2018": 193,
+        "share_pct": 3.5
+      }
+    },
+    {
+      "name": "MSAKEN",
+      "current_month": 80.0,
+      "previous_year_month": 65.0,
+      "variance_month_pct": 23.0,
+      "current_year_to_date": 251.0,
+      "previous_year_to_date": 115.0,
+      "variance_ytd_pct": 118.0,
+      "since_program_start": 2421.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "MSAKEN",
+        "current_month": 0.3,
+        "previous_year_month": 0.2,
+        "variance_month_pct": 28.0,
+        "current_year_to_date": 1.0,
+        "previous_year_to_date": 0.4,
+        "variance_ytd_pct": 138.0,
+        "since_program_start": 7.0,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "MSAKEN",
+        "current_year_to_date": 44,
+        "previous_year_to_date": 7,
+        "variance_ytd_pct": 529.0,
+        "since_2018": 64,
+        "share_pct": 1.2
+      }
+    },
+    {
+      "name": "SBEITLA",
+      "current_month": 1.0,
+      "previous_year_month": 2.0,
+      "variance_month_pct": -50.0,
+      "current_year_to_date": 8.0,
+      "previous_year_to_date": 3.0,
+      "variance_ytd_pct": 167.0,
+      "since_program_start": 120.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "SBEITLA",
+        "current_month": 0.0,
+        "previous_year_month": 0.0,
+        "variance_month_pct": -83.0,
+        "current_year_to_date": 0.0,
+        "previous_year_to_date": 0.0,
+        "variance_ytd_pct": 189.0,
+        "since_program_start": 0.4,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "SBEITLA",
+        "current_year_to_date": 4,
+        "previous_year_to_date": 2,
+        "variance_ytd_pct": 100.0,
+        "since_2018": 14,
+        "share_pct": 0.3
+      }
+    },
+    {
+      "name": "ENFIDHA",
+      "current_month": 28.0,
+      "previous_year_month": 0.0,
+      "variance_month_pct": null,
+      "current_year_to_date": 49.0,
+      "previous_year_to_date": 17.0,
+      "variance_ytd_pct": 188.0,
+      "since_program_start": 587.0,
+      "unit": "installations",
+      "installed_power": {
+        "name": "ENFIDHA",
+        "current_month": 0.1,
+        "previous_year_month": 0.0,
+        "variance_month_pct": null,
+        "current_year_to_date": 0.2,
+        "previous_year_to_date": 0.1,
+        "variance_ytd_pct": 171.0,
+        "since_program_start": 1.9,
+        "unit": "MW"
+      },
+      "pending_dossiers": {
+        "district": "ENFIDHA",
+        "current_year_to_date": 7,
+        "previous_year_to_date": 13,
+        "variance_ytd_pct": -46.0,
+        "since_2018": 33,
+        "share_pct": 0.6
+      }
+    }
+  ],
+  "installation_sizes": [
+    {
+      "system_size_kwc": 1,
+      "current_month": 6.0,
+      "previous_year_month": 7.0,
+      "variance_month_pct": 8.0,
+      "current_year_to_date": 9.0,
+      "previous_year_to_date": 10.0,
+      "variance_ytd_pct": 11.0,
+      "since_program_start": 12.0,
+      "unit": "installations"
+    },
+    {
+      "system_size_kwc": 2,
+      "current_month": 441.0,
+      "previous_year_month": 652.0,
+      "variance_month_pct": -32.0,
+      "current_year_to_date": 1256.0,
+      "previous_year_to_date": 1068.0,
+      "variance_ytd_pct": 18.0,
+      "since_program_start": 54213.0,
+      "unit": "installations"
+    },
+    {
+      "system_size_kwc": 3,
+      "current_month": 1546.0,
+      "previous_year_month": 2071.0,
+      "variance_month_pct": -25.0,
+      "current_year_to_date": 4654.0,
+      "previous_year_to_date": 3355.0,
+      "variance_ytd_pct": 39.0,
+      "since_program_start": 49054.0,
+      "unit": "installations"
+    },
+    {
+      "system_size_kwc": 4,
+      "current_month": 674.0,
+      "previous_year_month": 396.0,
+      "variance_month_pct": 70.0,
+      "current_year_to_date": 1895.0,
+      "previous_year_to_date": 759.0,
+      "variance_ytd_pct": 150.0,
+      "since_program_start": 15599.0,
+      "unit": "installations"
+    },
+    {
+      "system_size_kwc": 5,
+      "current_month": 175.0,
+      "previous_year_month": 204.0,
+      "variance_month_pct": -14.0,
+      "current_year_to_date": 534.0,
+      "previous_year_to_date": 358.0,
+      "variance_ytd_pct": 49.0,
+      "since_program_start": 6528.0,
+      "unit": "installations"
+    },
+    {
+      "system_size_kwc": 6,
+      "current_month": 152.0,
+      "previous_year_month": 106.0,
+      "variance_month_pct": 43.0,
+      "current_year_to_date": 400.0,
+      "previous_year_to_date": 191.0,
+      "variance_ytd_pct": 109.0,
+      "since_program_start": 3791.0,
+      "unit": "installations"
+    },
+    {
+      "system_size_kwc": 7,
+      "current_month": 42.0,
+      "previous_year_month": 20.0,
+      "variance_month_pct": 110.0,
+      "current_year_to_date": 92.0,
+      "previous_year_to_date": 54.0,
+      "variance_ytd_pct": 70.0,
+      "since_program_start": 1211.0,
+      "unit": "installations"
+    },
+    {
+      "system_size_kwc": 8,
+      "current_month": 29.0,
+      "previous_year_month": 31.0,
+      "variance_month_pct": -6.0,
+      "current_year_to_date": 61.0,
+      "previous_year_to_date": 70.0,
+      "variance_ytd_pct": -13.0,
+      "since_program_start": 1193.0,
+      "unit": "installations"
+    },
+    {
+      "system_size_kwc": 9,
+      "current_month": 13.0,
+      "previous_year_month": 10.0,
+      "variance_month_pct": 30.0,
+      "current_year_to_date": 26.0,
+      "previous_year_to_date": 37.0,
+      "variance_ytd_pct": -30.0,
+      "since_program_start": 566.0,
+      "unit": "installations"
+    },
+    {
+      "system_size_kwc": 10,
+      "current_month": 28.0,
+      "previous_year_month": 26.0,
+      "variance_month_pct": 8.0,
+      "current_year_to_date": 80.0,
+      "previous_year_to_date": 54.0,
+      "variance_ytd_pct": 48.0,
+      "since_program_start": 1249.0,
+      "unit": "installations"
+    },
+    {
+      "system_size_kwc": 11,
+      "current_month": 6.0,
+      "previous_year_month": 12.0,
+      "variance_month_pct": -50.0,
+      "current_year_to_date": 19.0,
+      "previous_year_to_date": 25.0,
+      "variance_ytd_pct": -24.0,
+      "since_program_start": 334.0,
+      "unit": "installations"
+    },
+    {
+      "system_size_kwc": 12,
+      "current_month": 61.0,
+      "previous_year_month": 71.0,
+      "variance_month_pct": -14.0,
+      "current_year_to_date": 184.0,
+      "previous_year_to_date": 174.0,
+      "variance_ytd_pct": 6.0,
+      "since_program_start": 2919.0,
+      "unit": "installations"
+    }
+  ],
+  "pending_dossiers": [
+    {
+      "district": "TUNIS VILLE",
+      "current_year_to_date": 33,
+      "previous_year_to_date": 5,
+      "variance_ytd_pct": 560.0,
+      "since_2018": 38,
+      "share_pct": 0.7
+    },
+    {
+      "district": "ARIANA",
+      "current_year_to_date": 81,
+      "previous_year_to_date": 56,
+      "variance_ytd_pct": 45.0,
+      "since_2018": 139,
+      "share_pct": 2.5
+    },
+    {
+      "district": "EZZAHRA",
+      "current_year_to_date": 66,
+      "previous_year_to_date": 80,
+      "variance_ytd_pct": -18.0,
+      "since_2018": 201,
+      "share_pct": 3.7
+    },
+    {
+      "district": "MOUROUJ",
+      "current_year_to_date": 67,
+      "previous_year_to_date": 24,
+      "variance_ytd_pct": 179.0,
+      "since_2018": 91,
+      "share_pct": 1.7
+    },
+    {
+      "district": "KRAM",
+      "current_year_to_date": 136,
+      "previous_year_to_date": 117,
+      "variance_ytd_pct": 16.0,
+      "since_2018": 276,
+      "share_pct": 5.0
+    },
+    {
+      "district": "BARDO",
+      "current_year_to_date": 155,
+      "previous_year_to_date": 47,
+      "variance_ytd_pct": 230.0,
+      "since_2018": 245,
+      "share_pct": 4.5
+    },
+    {
+      "district": "MANNOUBA",
+      "current_year_to_date": 43,
+      "previous_year_to_date": 5,
+      "variance_ytd_pct": 760.0,
+      "since_2018": 49,
+      "share_pct": 0.9
+    },
+    {
+      "district": "EL MENZAH",
+      "current_year_to_date": 78,
+      "previous_year_to_date": 25,
+      "variance_ytd_pct": 212.0,
+      "since_2018": 103,
+      "share_pct": 1.9
+    },
+    {
+      "district": "ZAGHOUAN",
+      "current_year_to_date": 34,
+      "previous_year_to_date": 26,
+      "variance_ytd_pct": 31.0,
+      "since_2018": 111,
+      "share_pct": 2.0
+    },
+    {
+      "district": "BIZERTE",
+      "current_year_to_date": 43,
+      "previous_year_to_date": 6,
+      "variance_ytd_pct": 617.0,
+      "since_2018": 49,
+      "share_pct": 0.9
+    },
+    {
+      "district": "MENZEL BOURGUIBA",
+      "current_year_to_date": 10,
+      "previous_year_to_date": 2,
+      "variance_ytd_pct": 400.0,
+      "since_2018": 12,
+      "share_pct": 0.2
+    },
+    {
+      "district": "NABEUL",
+      "current_year_to_date": 175,
+      "previous_year_to_date": 117,
+      "variance_ytd_pct": 50.0,
+      "since_2018": 395,
+      "share_pct": 7.2
+    },
+    {
+      "district": "MENZEL B-ZELFA",
+      "current_year_to_date": 88,
+      "previous_year_to_date": 28,
+      "variance_ytd_pct": 214.0,
+      "since_2018": 118,
+      "share_pct": 2.2
+    },
+    {
+      "district": "MENZEL TEMIME",
+      "current_year_to_date": 72,
+      "previous_year_to_date": 38,
+      "variance_ytd_pct": 89.0,
+      "since_2018": 110,
+      "share_pct": 2.0
+    },
+    {
+      "district": "HAMMAMET",
+      "current_year_to_date": 168,
+      "previous_year_to_date": 51,
+      "variance_ytd_pct": 229.0,
+      "since_2018": 271,
+      "share_pct": 4.9
+    },
+    {
+      "district": "BEJA",
+      "current_year_to_date": 11,
+      "previous_year_to_date": 10,
+      "variance_ytd_pct": 10.0,
+      "since_2018": 21,
+      "share_pct": 0.4
+    },
+    {
+      "district": "JENDOUBA",
+      "current_year_to_date": 4,
+      "previous_year_to_date": 2,
+      "variance_ytd_pct": 100.0,
+      "since_2018": 6,
+      "share_pct": 0.1
+    },
+    {
+      "district": "KEF",
+      "current_year_to_date": 20,
+      "previous_year_to_date": 10,
+      "variance_ytd_pct": 100.0,
+      "since_2018": 31,
+      "share_pct": 0.6
+    },
+    {
+      "district": "SILIANA",
+      "current_year_to_date": 21,
+      "previous_year_to_date": 10,
+      "variance_ytd_pct": 110.0,
+      "since_2018": 55,
+      "share_pct": 1.0
+    },
+    {
+      "district": "TABARKA",
+      "current_year_to_date": 2,
+      "previous_year_to_date": 1,
+      "variance_ytd_pct": 100.0,
+      "since_2018": 3,
+      "share_pct": 0.1
+    },
+    {
+      "district": "SOUSSE",
+      "current_year_to_date": 44,
+      "previous_year_to_date": 3,
+      "variance_ytd_pct": 1367.0,
+      "since_2018": 47,
+      "share_pct": 0.9
+    },
+    {
+      "district": "SOUSSE NORD",
+      "current_year_to_date": 51,
+      "previous_year_to_date": 45,
+      "variance_ytd_pct": 13.0,
+      "since_2018": 129,
+      "share_pct": 2.4
+    },
+    {
+      "district": "MONASTIR",
+      "current_year_to_date": 89,
+      "previous_year_to_date": 54,
+      "variance_ytd_pct": 65.0,
+      "since_2018": 168,
+      "share_pct": 3.1
+    },
+    {
+      "district": "MOKNINE",
+      "current_year_to_date": 209,
+      "previous_year_to_date": 34,
+      "variance_ytd_pct": 515.0,
+      "since_2018": 245,
+      "share_pct": 4.5
+    },
+    {
+      "district": "MAHDIA",
+      "current_year_to_date": 62,
+      "previous_year_to_date": 11,
+      "variance_ytd_pct": 464.0,
+      "since_2018": 79,
+      "share_pct": 1.4
+    },
+    {
+      "district": "KAIROUAN",
+      "current_year_to_date": 25,
+      "previous_year_to_date": 21,
+      "variance_ytd_pct": 19.0,
+      "since_2018": 98,
+      "share_pct": 1.8
+    },
+    {
+      "district": "KAIROUAN NORD",
+      "current_year_to_date": 9,
+      "previous_year_to_date": 7,
+      "variance_ytd_pct": 29.0,
+      "since_2018": 16,
+      "share_pct": 0.3
+    },
+    {
+      "district": "EL JEM",
+      "current_year_to_date": 36,
+      "previous_year_to_date": 33,
+      "variance_ytd_pct": 9.0,
+      "since_2018": 109,
+      "share_pct": 2.0
+    },
+    {
+      "district": "KASSERINE",
+      "current_year_to_date": 5,
+      "previous_year_to_date": 1,
+      "variance_ytd_pct": 400.0,
+      "since_2018": 6,
+      "share_pct": 0.1
+    },
+    {
+      "district": "SIDI-BOUZID",
+      "current_year_to_date": 20,
+      "previous_year_to_date": 8,
+      "variance_ytd_pct": 150.0,
+      "since_2018": 35,
+      "share_pct": 0.6
+    },
+    {
+      "district": "GAFSA",
+      "current_year_to_date": 27,
+      "previous_year_to_date": 44,
+      "variance_ytd_pct": -39.0,
+      "since_2018": 107,
+      "share_pct": 2.0
+    },
+    {
+      "district": "METLAOUI",
+      "current_year_to_date": 10,
+      "previous_year_to_date": 1,
+      "variance_ytd_pct": 900.0,
+      "since_2018": 11,
+      "share_pct": 0.2
+    },
+    {
+      "district": "TOZEUR",
+      "current_year_to_date": 15,
+      "previous_year_to_date": 12,
+      "variance_ytd_pct": 25.0,
+      "since_2018": 50,
+      "share_pct": 0.9
+    },
+    {
+      "district": "MAKNASSY",
+      "current_year_to_date": 5,
+      "previous_year_to_date": 3,
+      "variance_ytd_pct": 67.0,
+      "since_2018": 11,
+      "share_pct": 0.2
+    },
+    {
+      "district": "SFAX VILLE",
+      "current_year_to_date": 94,
+      "previous_year_to_date": 65,
+      "variance_ytd_pct": 45.0,
+      "since_2018": 197,
+      "share_pct": 3.6
+    },
+    {
+      "district": "JBENIANA",
+      "current_year_to_date": 48,
+      "previous_year_to_date": 22,
+      "variance_ytd_pct": 118.0,
+      "since_2018": 72,
+      "share_pct": 1.3
+    },
+    {
+      "district": "SFAX NORD",
+      "current_year_to_date": 158,
+      "previous_year_to_date": 68,
+      "variance_ytd_pct": 132.0,
+      "since_2018": 253,
+      "share_pct": 4.6
+    },
+    {
+      "district": "MAHRES",
+      "current_year_to_date": 19,
+      "previous_year_to_date": 10,
+      "variance_ytd_pct": 90.0,
+      "since_2018": 43,
+      "share_pct": 0.8
+    },
+    {
+      "district": "SFAX SUD",
+      "current_year_to_date": 167,
+      "previous_year_to_date": 71,
+      "variance_ytd_pct": 135.0,
+      "since_2018": 271,
+      "share_pct": 4.9
+    },
+    {
+      "district": "GABES",
+      "current_year_to_date": 126,
+      "previous_year_to_date": 41,
+      "variance_ytd_pct": 207.0,
+      "since_2018": 167,
+      "share_pct": 3.1
+    },
+    {
+      "district": "KEBILI",
+      "current_year_to_date": 188,
+      "previous_year_to_date": 22,
+      "variance_ytd_pct": 755.0,
+      "since_2018": 210,
+      "share_pct": 3.8
+    },
+    {
+      "district": "ZARZIS",
+      "current_year_to_date": 54,
+      "previous_year_to_date": 25,
+      "variance_ytd_pct": 116.0,
+      "since_2018": 105,
+      "share_pct": 1.9
+    },
+    {
+      "district": "MEDNINE",
+      "current_year_to_date": 12,
+      "previous_year_to_date": 4,
+      "variance_ytd_pct": 200.0,
+      "since_2018": 16,
+      "share_pct": 0.3
+    },
+    {
+      "district": "JERBA",
+      "current_year_to_date": 227,
+      "previous_year_to_date": 89,
+      "variance_ytd_pct": 155.0,
+      "since_2018": 319,
+      "share_pct": 5.8
+    },
+    {
+      "district": "TATAOUINE",
+      "current_year_to_date": 14,
+      "previous_year_to_date": 21,
+      "variance_ytd_pct": -33.0,
+      "since_2018": 65,
+      "share_pct": 1.2
+    },
+    {
+      "district": "BEN GUERDENE",
+      "current_year_to_date": 1,
+      "previous_year_to_date": 17,
+      "variance_ytd_pct": -94.0,
+      "since_2018": 18,
+      "share_pct": 0.3
+    },
+    {
+      "district": "GABES NORD",
+      "current_year_to_date": 94,
+      "previous_year_to_date": 52,
+      "variance_ytd_pct": 81.0,
+      "since_2018": 193,
+      "share_pct": 3.5
+    },
+    {
+      "district": "MSAKEN",
+      "current_year_to_date": 44,
+      "previous_year_to_date": 7,
+      "variance_ytd_pct": 529.0,
+      "since_2018": 64,
+      "share_pct": 1.2
+    },
+    {
+      "district": "SBEITLA",
+      "current_year_to_date": 4,
+      "previous_year_to_date": 2,
+      "variance_ytd_pct": 100.0,
+      "since_2018": 14,
+      "share_pct": 0.3
+    },
+    {
+      "district": "ENFIDHA",
+      "current_year_to_date": 7,
+      "previous_year_to_date": 13,
+      "variance_ytd_pct": -46.0,
+      "since_2018": 33,
+      "share_pct": 0.6
+    }
+  ],
+  "excluded_sections": [
+    "6. Chauffe-Eau-Solaire (CES)"
+  ]
+}

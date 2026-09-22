@@ -1,0 +1,20 @@
+[
+  {
+    "report_period": "2026-03",
+    "emission_date": "11/05/2026",
+    "source_file": "prosol_mars_2026_1.txt",
+    "snapshot_file": "reports/generated/prosol_2026-03_v1.json",
+    "scope": "rooftop_pv",
+    "reconciliation_passed": true,
+    "imported_at": "2026-09-22T09:39:49.768504+00:00"
+  },
+  {
+    "report_period": "2026-03",
+    "emission_date": "11/05/2026",
+    "source_file": "prosol_mars_2026_2.txt",
+    "snapshot_file": "reports/generated/prosol_2026-03_v2.json",
+    "scope": "rooftop_pv",
+    "reconciliation_passed": true,
+    "imported_at": "2026-09-22T09:42:27.063992+00:00"
+  }
+]
