@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PréSol — Granular regional PV forecast for all 50 STEG commercial districts and 7 Directions with full P10/P50/P90 model prediction breakdown.">
+    <title>PréSol — Regional Analysis</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .district-grid-layout {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+        @media (max-width: 1080px) {
+            .district-grid-layout { grid-template-columns: 1fr; }
+        }
+
+        .peak-card {
+            background: var(--bg-canvas);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+            text-align: center;
+        }
+        .peak-card-item .val {
+            font-size: 1.2rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            color: var(--text-primary);
+        }
+        .peak-card-item .val.p50 { color: var(--accent-primary); }
+        .peak-card-item .val.p10 { color: #f59e0b; }
+        .peak-card-item .val.p90 { color: #10b981; }
+        .peak-card-item .lbl {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .filter-pill-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        .filter-pill {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            padding: 4px 12px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .filter-pill.active, .filter-pill:hover {
+            background: var(--accent-primary);
+            color: #000;
+            border-color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .prediction-table-wrap {
+            max-height: 380px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            margin-top: 1rem;
+        }
+        .prediction-table-wrap table {
+            width: 100%;
+            font-size: 0.8rem;
+            border-collapse: collapse;
+        }
+        .prediction-table-wrap th {
+            position: sticky;
+            top: 0;
+            background: var(--bg-surface);
+            padding: 8px 10px;
+            border-bottom: 2px solid var(--border-color);
+            font-weight: 600;
+            text-align: left;
+            z-index: 2;
+        }
+        .prediction-table-wrap td {
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border-color);
+            font-family: var(--font-mono);
+        }
+        .unc-pill {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+        .unc-pill.low  { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .unc-pill.mid  { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+        .unc-pill.high { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    </style>
+</head>
+<body data-page="districts">
+
+    <aside class="sidebar">
+        <div class="brand">
+            <h1>PréSol</h1>
+            <p data-i18n="brand-sub">STEG PV Forecasting</p>
+        </div>
+        <div class="lang-toggle">
+            <button class="lang-btn active" data-lang="en">EN</button>
+            <button class="lang-btn" data-lang="fr">FR</button>
+            <button class="lang-btn" data-lang="ar">ع</button>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html"><span class="nav-icon">⚡</span><span data-i18n="nav-national">National Overview</span></a></li>
+            <li><a href="districts.html" class="active"><span class="nav-icon">📊</span><span data-i18n="nav-regional">Regional Analysis</span></a></li>
+            <li><a href="map.html"><span class="nav-icon">🗺️</span><span data-i18n="nav-map">Spatial Timelapse</span></a></li>
+            <li><a href="performance.html"><span class="nav-icon">🔬</span><span data-i18n="nav-perf">Model Health</span></a></li>
+            <li><a href="alerts.html"><span class="nav-icon">🔔</span><span data-i18n="nav-alerts">Alerts</span><span class="nav-badge" id="nav-alert-badge">0</span></a></li>
+            <li><a href="registry.html"><span class="nav-icon">🏗️</span><span data-i18n="nav-registry">Park Registry</span></a></li>
+        </ul>
+        <div class="api-status-box">
+            <div><span class="status-indicator" id="status-dot"></span><span id="status-text">Connecting…</span></div>
+            <div class="cache-age" id="status-cap">Cap: -- MWc</div>
+            <div class="cache-age" id="cache-age-display"></div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <h2 data-i18n="districts-title">Regional Analysis</h2>
+            <p data-i18n="districts-sub">Granular P10/P50/P90 forecasts across 50 STEG commercial districts and 7 Directions de Distribution with detailed model predictions.</p>
+        </header>
+
+        <div class="district-grid-layout">
+            <!-- District Table & Filters -->
+            <section class="panel" style="max-height: 750px; display: flex; flex-direction: column; padding: 1.25rem;">
+                <div class="flex-between" style="margin-bottom:0.5rem;">
+                    <span style="font-weight:700;font-size:0.95rem;">Districts Commerciaux</span>
+                    <span class="title-badge" id="dist-count-badge">50 DISTRICTS</span>
+                </div>
+
+                <!-- Direction Filter Pills -->
+                <div class="filter-pill-group" id="directionFilterPills">
+                    <button class="filter-pill active" data-direction="ALL">Tous (50)</button>
+                    <!-- Directions injected by app.js -->
+                </div>
+
+                <input type="text" id="search-dist" class="search-input" placeholder="🔍 Rechercher un district STEG…" style="margin-bottom:0.75rem;">
+
+                <div style="flex:1; overflow-y:auto; border:1px solid var(--border-color); border-radius:var(--radius-sm);">
+                    <table class="data-table" style="margin:0;">
+                        <thead>
+                            <tr>
+                                <th>District</th>
+                                <th>Direction</th>
+                                <th>Cap (MWc)</th>
+                                <th>Pic J+1</th>
+                            </tr>
+                        </thead>
+                        <tbody id="district-tbody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Drill-down Chart & Detailed Prediction Breakdown -->
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <section class="panel">
+                    <div class="flex-between">
+                        <h3 class="panel-title" id="drilldown-title">Sélectionnez un district</h3>
+                        <span class="title-badge" id="drilldown-dir-badge">—</span>
+                    </div>
+
+                    <!-- Peak Prediction Card for Selected District -->
+                    <div class="peak-card" id="peakPredictionCard" style="display:none;">
+                        <div class="peak-card-item">
+                            <div class="val p10" id="peak-p10">-- MW</div>
+                            <div class="lbl">P10 (Pessimiste)</div>
+                        </div>
+                        <div class="peak-card-item">
+                            <div class="val p50" id="peak-p50">-- MW</div>
+                            <div class="lbl">P50 (Médian)</div>
+                        </div>
+                        <div class="peak-card-item">
+                            <div class="val p90" id="peak-p90">-- MW</div>
+                            <div class="lbl">P90 (Optimiste)</div>
+                        </div>
+                        <div class="peak-card-item">
+                            <div class="val" id="peak-time">--:--</div>
+                            <div class="lbl">Heure de Pic J+1</div>
+                        </div>
+                    </div>
+
+                    <div class="chart-wrapper" style="height: 270px;">
+                        <canvas id="districtChart"></canvas>
+                    </div>
+
+                    <!-- Model Prediction Hour-by-Hour Table -->
+                    <div style="margin-top: 1.25rem;">
+                        <div class="flex-between">
+                            <h4 style="font-size:0.9rem;font-weight:700;color:var(--text-primary);">
+                                🔬 Détail des Prédictions du Modèle (P10 / P50 / P90 & Météo)
+                            </h4>
+                            <span class="text-muted" style="font-size:0.75rem;">Prochaines 48 heures</span>
+                        </div>
+                        <div class="prediction-table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date & Heure</th>
+                                        <th>P10 (MW)</th>
+                                        <th>P50 (MW)</th>
+                                        <th>P90 (MW)</th>
+                                        <th>Incertitude</th>
+                                        <th>GHI (W/m²)</th>
+                                        <th>Temp (°C)</th>
+                                        <th>Nuages (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="predictionBreakdownTbody">
+                                    <tr><td colspan="8" style="text-align:center;color:var(--text-secondary);padding:1.5rem;">Sélectionnez un district dans la liste pour afficher le détail des prédictions.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

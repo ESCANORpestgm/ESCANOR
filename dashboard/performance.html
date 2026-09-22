@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PréSol — Model health diagnostics, backtest metrics, retrain history and historical accuracy tracking.">
+    <title>PréSol — Model Health</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+</head>
+<body data-page="performance">
+
+    <aside class="sidebar">
+        <div class="brand"><h1>PréSol</h1><p data-i18n="brand-sub">STEG PV Forecasting</p></div>
+        <div class="lang-toggle">
+            <button class="lang-btn active" data-lang="en">EN</button>
+            <button class="lang-btn" data-lang="fr">FR</button>
+            <button class="lang-btn" data-lang="ar">ع</button>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html"><span class="nav-icon">⚡</span><span data-i18n="nav-national">National Overview</span></a></li>
+            <li><a href="districts.html"><span class="nav-icon">📊</span><span data-i18n="nav-regional">Regional Analysis</span></a></li>
+            <li><a href="map.html"><span class="nav-icon">🗺️</span><span data-i18n="nav-map">Spatial Timelapse</span></a></li>
+            <li><a href="performance.html" class="active"><span class="nav-icon">🔬</span><span data-i18n="nav-perf">Model Health</span></a></li>
+            <li><a href="alerts.html"><span class="nav-icon">🔔</span><span data-i18n="nav-alerts">Alerts</span><span class="nav-badge" id="nav-alert-badge">0</span></a></li>
+            <li><a href="registry.html"><span class="nav-icon">🏗️</span><span data-i18n="nav-registry">Park Registry</span></a></li>
+        </ul>
+        <div class="api-status-box">
+            <div><span class="status-indicator" id="status-dot"></span><span id="status-text">Connecting…</span></div>
+            <div class="cache-age" id="status-cap">Cap: -- MWc</div>
+            <div class="cache-age" id="cache-age-display"></div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <h2 data-i18n="perf-title">Model Health &amp; Diagnostics</h2>
+            <p data-i18n="perf-sub">Backtesting results, P10-P90 interval coverage, and continuous learning retrain history.</p>
+        </header>
+
+        <!-- Historical Accuracy -->
+        <section class="panel">
+            <h3 class="panel-title" data-i18n="perf-hist-title">
+                Historical Accuracy (Last 30 Days)
+                <span class="title-badge">ACTUAL vs FORECAST</span>
+            </h3>
+            <div class="chart-wrapper">
+                <canvas id="historyChart"></canvas>
+            </div>
+            <p id="history-error" style="color:var(--status-warn);display:none;margin-top:10px;font-size:0.85rem;">
+                ⚠️ Run <code>python models/history.py</code> to generate history data.
+            </p>
+        </section>
+
+        <!-- Backtest Metrics Table -->
+        <section class="panel">
+            <h3 class="panel-title" data-i18n="perf-metrics-title">
+                Quantile Model Metrics (By Horizon)
+                <span class="title-badge">BACKTEST</span>
+            </h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Horizon</th>
+                        <th>nRMSE — Our Model</th>
+                        <th>nRMSE — Persistence</th>
+                        <th>nRMSE — Clear-Sky</th>
+                        <th>P10–P90 Coverage</th>
+                        <th>Samples</th>
+                    </tr>
+                </thead>
+                <tbody id="metrics-tbody"></tbody>
+            </table>
+            <p id="metrics-error" style="color:var(--status-warn);display:none;margin-top:10px;font-size:0.85rem;">
+                ⚠️ Run <code>python models/ml_forecast.py</code> to generate metrics.
+            </p>
+        </section>
+
+        <!-- Retrain History -->
+        <section class="panel">
+            <h3 class="panel-title" data-i18n="perf-retrain-title">
+                Continuous Learning — Retrain Log
+                <span class="title-badge">AUTO</span>
+            </h3>
+            <div class="retrain-log" id="retrain-log">
+                <p style="color:var(--text-secondary);font-size:0.85rem;">No retrain events yet. Push metering data via <code>POST /metering/push</code>.</p>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PréSol — Spatial Timelapse Map of Tunisia with live weather conditions and P10/P50/P90 uncertainty across 50 STEG districts.">
+    <title>PréSol — Spatial Timelapse</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .map-layout { display: flex; gap: 1.5rem; }
+        .map-main   { flex: 1; min-width: 0; }
+        #map        { height: 500px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); }
+
+        .map-drilldown {
+            width: 320px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            display: none;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .map-drilldown.open { display: flex; }
+
+        .drilldown-gov-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+        .drilldown-close     { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-secondary); }
+        .drilldown-kpi-row   { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; text-align: center; }
+        .drilldown-kpi       { background: var(--bg-canvas); border-radius: var(--radius-sm); padding: 0.5rem 0.25rem; border: 1px solid var(--border-color); }
+        .drilldown-kpi .val  { font-size: 1rem; font-weight: 700; color: var(--accent-primary); font-family: var(--font-mono); }
+        .drilldown-kpi .lbl  { font-size: 0.68rem; color: var(--text-secondary); margin-top: 2px; }
+        .drilldown-chart-wrap { height: 170px; margin-top: 0.5rem; }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 0.75rem 1.25rem;
+            margin-top: 0.75rem;
+        }
+        .play-btn {
+            background: var(--accent-primary);
+            color: #000;
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 6px 14px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        .play-btn:hover { opacity: 0.9; }
+        input[type=range] { flex: 1; accent-color: var(--accent-primary); cursor: pointer; }
+
+        .unc-legend { display: flex; gap: 1rem; font-size: 0.78rem; align-items: center; }
+        .unc-legend-item { display: flex; align-items: center; gap: 5px; color: var(--text-secondary); }
+        .unc-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .unc-dot.low  { background: #10b981; }
+        .unc-dot.mid  { background: #f59e0b; }
+        .unc-dot.high { background: #ef4444; }
+
+        /* Weather Strip in drilldown */
+        .drilldown-weather-strip {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            background: var(--bg-canvas);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 0.6rem;
+            font-size: 0.8rem;
+        }
+        .weather-mini-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-primary);
+        }
+        .weather-mini-item .w-icon { font-size: 1rem; }
+        .weather-mini-item .w-unit { font-size: 0.72rem; color: var(--text-secondary); }
+
+        /* Direction Weather Grid */
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .weather-card {
+            background: var(--bg-canvas);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .weather-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.4rem;
+        }
+        .weather-card-title {
+            font-weight: 700;
+            font-size: 0.92rem;
+            color: var(--text-primary);
+        }
+        .weather-card-badge {
+            font-size: 0.72rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+        }
+        .weather-card-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4rem;
+            font-size: 0.82rem;
+        }
+    </style>
+</head>
+<body data-page="map">
+
+    <aside class="sidebar">
+        <div class="brand">
+            <h1>PréSol</h1>
+            <p data-i18n="brand-sub">STEG PV Forecasting</p>
+        </div>
+        <div class="lang-toggle">
+            <button class="lang-btn active" data-lang="en">EN</button>
+            <button class="lang-btn" data-lang="fr">FR</button>
+            <button class="lang-btn" data-lang="ar">ع</button>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html"><span class="nav-icon">⚡</span><span data-i18n="nav-national">National Overview</span></a></li>
+            <li><a href="districts.html"><span class="nav-icon">📊</span><span data-i18n="nav-regional">Regional Analysis</span></a></li>
+            <li><a href="map.html" class="active"><span class="nav-icon">🗺️</span><span data-i18n="nav-map">Spatial Timelapse</span></a></li>
+            <li><a href="performance.html"><span class="nav-icon">🔬</span><span data-i18n="nav-perf">Model Health</span></a></li>
+            <li><a href="alerts.html"><span class="nav-icon">🔔</span><span data-i18n="nav-alerts">Alerts</span><span class="nav-badge" id="nav-alert-badge">0</span></a></li>
+            <li><a href="registry.html"><span class="nav-icon">🏗️</span><span data-i18n="nav-registry">Park Registry</span></a></li>
+        </ul>
+        <div class="api-status-box">
+            <div><span class="status-indicator" id="status-dot"></span><span id="status-text">Connecting…</span></div>
+            <div class="cache-age" id="status-cap">Cap: -- MWc</div>
+            <div class="cache-age" id="cache-age-display"></div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <h2 data-i18n="map-title">Spatial Timelapse Map</h2>
+            <p data-i18n="map-sub">Interactive spatial map of all 50 STEG commercial districts. Click any circle to drill down into weather and 72-hour forecast.</p>
+        </header>
+
+        <section class="panel" style="padding: 1rem;">
+            <!-- Map + drilldown side panel -->
+            <div class="map-layout">
+                <div class="map-main">
+                    <div id="map"></div>
+
+                    <div class="slider-container">
+                        <button class="play-btn" id="play-btn">▶ Play</button>
+                        <input type="range" id="time-slider" min="0" max="47" value="0">
+                        <div style="min-width:160px;text-align:right;font-family:var(--font-mono);font-size:0.88rem;" id="time-display">--:--</div>
+                    </div>
+
+                    <div class="flex-row mt-1" style="font-size:0.82rem;color:var(--text-secondary);">
+                        <span>Agg.: <strong id="map-nat-total" style="color:var(--text-primary);">0 MW</strong></span>
+                        <span class="spacer"></span>
+                        <!-- Uncertainty legend -->
+                        <div class="unc-legend">
+                            <span class="unc-legend-item"><span class="unc-dot low"></span> Faible incertitude</span>
+                            <span class="unc-legend-item"><span class="unc-dot mid"></span> Moyenne</span>
+                            <span class="unc-legend-item"><span class="unc-dot high"></span> Élevée</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drilldown side panel -->
+                <div class="map-drilldown" id="map-drilldown">
+                    <div class="flex-row" style="margin-bottom:0.75rem;">
+                        <span class="drilldown-gov-title" id="drilldown-gov-title">—</span>
+                        <button class="drilldown-close" id="drilldown-close">✕</button>
+                    </div>
+
+                    <div class="drilldown-kpi-row">
+                        <div class="drilldown-kpi">
+                            <div class="val" id="dd-p50">—</div>
+                            <div class="lbl">P50 MW</div>
+                        </div>
+                        <div class="drilldown-kpi">
+                            <div class="val" id="dd-util">—</div>
+                            <div class="lbl">Util %</div>
+                        </div>
+                        <div class="drilldown-kpi">
+                            <div class="val" id="dd-unc">—</div>
+                            <div class="lbl">±MW</div>
+                        </div>
+                    </div>
+
+                    <!-- Live Weather Conditions in Selected District -->
+                    <div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;color:var(--text-secondary);margin-top:0.25rem;">
+                        🌤️ Météo Actuelle
+                    </div>
+                    <div class="drilldown-weather-strip" id="drilldown-weather-strip">
+                        <div class="weather-mini-item"><span class="w-icon">☀️</span> <span id="dd-ghi">--</span> <span class="w-unit">W/m²</span></div>
+                        <div class="weather-mini-item"><span class="w-icon">🌡️</span> <span id="dd-temp">--</span> <span class="w-unit">°C</span></div>
+                        <div class="weather-mini-item"><span class="w-icon">☁️</span> <span id="dd-cloud">--</span> <span class="w-unit">% nuages</span></div>
+                        <div class="weather-mini-item"><span class="w-icon">💨</span> <span id="dd-wind">--</span> <span class="w-unit">m/s vent</span></div>
+                        <div class="weather-mini-item" style="grid-column: span 2;"><span class="w-icon">🏜️</span> Salissure poussière: <span id="dd-dust" style="font-weight:600;">--</span></div>
+                    </div>
+
+                    <div class="drilldown-chart-wrap">
+                        <canvas id="drilldownChart"></canvas>
+                    </div>
+                    <div style="margin-top:0.75rem;text-align:center;">
+                        <a id="drilldown-link" href="districts.html" style="font-size:0.8rem;color:var(--accent-primary);">Voir rapport régional détaillé →</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live Weather Snapshot Panel across 7 Directions -->
+        <section class="panel mt-1">
+            <div class="flex-between">
+                <h3 class="panel-title">
+                    🌤️ Conditions Météorologiques & Ensoleillement (7 Directions STEG)
+                </h3>
+                <span class="text-muted" style="font-size:0.82rem;">Source: Open-Meteo NWP Live / Modèle ECMWF</span>
+            </div>
+            <div class="weather-grid" id="weatherDirectionGrid">
+                <!-- Injected by app.js -->
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

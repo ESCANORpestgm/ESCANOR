@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PréSol — STEG national rooftop PV production forecasting platform. National overview with P10/P50/P90 uncertainty bands and Prosol displacement metrics.">
+    <title>PréSol — National Overview</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+</head>
+<body data-page="home">
+
+    <aside class="sidebar">
+        <div class="brand">
+            <h1>PréSol</h1>
+            <p data-i18n="brand-sub">STEG PV Forecasting</p>
+        </div>
+        <div class="lang-toggle">
+            <button class="lang-btn active" data-lang="en">EN</button>
+            <button class="lang-btn" data-lang="fr">FR</button>
+            <button class="lang-btn" data-lang="ar">ع</button>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html" class="active"><span class="nav-icon">⚡</span><span data-i18n="nav-national">National Overview</span></a></li>
+            <li><a href="districts.html"><span class="nav-icon">📊</span><span data-i18n="nav-regional">Regional Analysis</span></a></li>
+            <li><a href="map.html"><span class="nav-icon">🗺️</span><span data-i18n="nav-map">Spatial Timelapse</span></a></li>
+            <li><a href="performance.html"><span class="nav-icon">🔬</span><span data-i18n="nav-perf">Model Health</span></a></li>
+            <li><a href="alerts.html"><span class="nav-icon">🔔</span><span data-i18n="nav-alerts">Alerts</span><span class="nav-badge" id="nav-alert-badge">0</span></a></li>
+            <li><a href="registry.html"><span class="nav-icon">🏗️</span><span data-i18n="nav-registry">Park Registry</span></a></li>
+        </ul>
+
+        <div style="padding: 0 1rem 1rem 1rem;">
+            <button class="btn-sidebar-action" id="btn-open-prosol-modal" style="width:100%;">
+                <span class="nav-icon">📄</span> <span data-i18n="nav-prosol-report">Rapport STEG Prosol</span>
+            </button>
+        </div>
+
+        <div class="api-status-box">
+            <div><span class="status-indicator" id="status-dot"></span><span id="status-text">Connecting…</span></div>
+            <div class="cache-age" id="status-cap">Cap: -- MWc</div>
+            <div class="cache-age" id="cache-age-display"></div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <h2 data-i18n="home-title">National Overview</h2>
+            <p data-i18n="home-sub">Aggregated generation forecast for the Tunisian national grid (J to J+3) across 50 STEG commercial districts.</p>
+        </header>
+
+        <!-- Intraday Bias-Correction Banner -->
+        <div class="intraday-banner" id="intraday-banner" style="display:none;">
+            ✅ <span id="intraday-banner-text">Intra-day bias correction active — forecast adjusted from morning actuals.</span>
+        </div>
+
+        <!-- Primary Generation KPIs -->
+        <section class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label" data-i18n="kpi-current">Current Estimated Output</div>
+                <div class="kpi-value" id="kpi-current">-- <span style="font-size:1rem;color:var(--text-secondary);">MW</span></div>
+                <div class="kpi-sub"><span class="uncertainty-badge" id="kpi-current-unc">±-- MW</span></div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label" data-i18n="kpi-today">Peak Forecast (Today)</div>
+                <div class="kpi-value" id="kpi-peak-today">-- <span style="font-size:1rem;color:var(--text-secondary);">MW</span></div>
+                <div class="kpi-sub"><span class="uncertainty-badge" id="kpi-today-unc">±-- MW</span></div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label" data-i18n="kpi-tmrw">Peak Forecast (Tomorrow)</div>
+                <div class="kpi-value" id="kpi-peak-tmrw">-- <span style="font-size:1rem;color:var(--text-secondary);">MW</span></div>
+                <div class="kpi-sub"><span class="uncertainty-badge" id="kpi-tmrw-unc">±-- MW</span></div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label" data-i18n="kpi-capacity">Installed Capacity</div>
+                <div class="kpi-value" id="kpi-capacity">-- <span style="font-size:1rem;color:var(--text-secondary);">MWc</span></div>
+                <div class="kpi-sub text-muted" id="kpi-datasource">--</div>
+            </div>
+        </section>
+
+        <!-- STEG Prosol Multi-Vector Displacement KPI Strip -->
+        <section class="panel mt-1" style="padding: 1rem 1.25rem; border-left: 3px solid var(--accent-primary);">
+            <div class="flex-between" style="margin-bottom:0.75rem;">
+                <span style="font-size:0.85rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--accent-primary);">
+                    🌿 Bilan & Économie d'Énergie STEG Prosol (Aujourd'hui)
+                </span>
+                <span style="font-size:0.78rem;color:var(--text-secondary);">Source: Ratios Officiels STEG Mars 2026</span>
+            </div>
+            <div class="prosol-kpi-strip">
+                <div class="prosol-kpi-item">
+                    <div class="prosol-kpi-icon">⚡</div>
+                    <div class="prosol-kpi-data">
+                        <div class="val" id="kpi-prosol-mwh">-- MWh</div>
+                        <div class="lbl">Production Prévue</div>
+                    </div>
+                </div>
+                <div class="prosol-kpi-item">
+                    <div class="prosol-kpi-icon">🔌</div>
+                    <div class="prosol-kpi-data">
+                        <div class="val" id="kpi-prosol-injected">-- MWh</div>
+                        <div class="lbl">Injecté Réseau (64.1%)</div>
+                    </div>
+                </div>
+                <div class="prosol-kpi-item">
+                    <div class="prosol-kpi-icon">💧</div>
+                    <div class="prosol-kpi-data">
+                        <div class="val" id="kpi-prosol-tep">-- tep</div>
+                        <div class="lbl">Combustible Évité</div>
+                    </div>
+                </div>
+                <div class="prosol-kpi-item">
+                    <div class="prosol-kpi-icon">💰</div>
+                    <div class="prosol-kpi-data">
+                        <div class="val" id="kpi-prosol-cost">-- DT</div>
+                        <div class="lbl">Coût Combustible Évité</div>
+                    </div>
+                </div>
+                <div class="prosol-kpi-item">
+                    <div class="prosol-kpi-icon">🌿</div>
+                    <div class="prosol-kpi-data">
+                        <div class="val" id="kpi-prosol-co2">-- t</div>
+                        <div class="lbl">Émissions CO₂ Évitées</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- National Forecast Chart with Gross / Net Injection Toggle -->
+        <section class="panel mt-1">
+            <div class="flex-between">
+                <h3 class="panel-title" data-i18n="chart-national-title">
+                    National PV Generation Forecast
+                    <span class="title-badge">J+3</span>
+                </h3>
+                <div class="chart-toggle-pills">
+                    <button id="btn-toggle-gross" class="pill-btn active">⚡ Production Brute</button>
+                    <button id="btn-toggle-net" class="pill-btn">🔌 Injection Réseau (64.07%)</button>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="nationalChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Intraday 15-min chart -->
+        <section class="panel mt-1">
+            <h3 class="panel-title" data-i18n="chart-intraday-title">
+                Intra-Day Forecast (15-min resolution)
+                <span class="title-badge">Next 6h</span>
+            </h3>
+            <div class="chart-wrapper" style="height:220px;">
+                <canvas id="intradayChart"></canvas>
+            </div>
+        </section>
+    </main>
+
+    <!-- Prosol Report Studio Modal -->
+    <div id="prosolModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>📄 Rapport STEG Prosol — Tableau de Bord</h3>
+                <button class="modal-close-btn" id="btnCloseProsolModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-subtitle">Génération conforme aux 8 indicateurs officiels et aux 50 districts commerciaux STEG.</p>
+                <div class="modal-metrics-preview" id="modalMetricsPreview">
+                    <div class="preview-spinner">Chargement des données de synthèse Prosol...</div>
+                </div>
+                <div class="modal-actions">
+                    <a href="/reports/prosol/html" target="_blank" class="btn btn-primary">📊 Ouvrir Rapport HTML Officiel</a>
+                    <button class="btn btn-secondary" id="btnDownloadProsolJson">⬇️ Télécharger Synthèse JSON</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

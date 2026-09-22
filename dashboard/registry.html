@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PréSol — STEG PV Park Registry for all 50 commercial districts and dynamic capacity expansion pipeline.">
+    <title>PréSol — Park Registry & Pipeline</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .registry-tabs {
+            display: flex;
+            gap: 1rem;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 1.25rem;
+        }
+        .registry-tab-btn {
+            background: none;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            padding: 0.5rem 0.25rem 0.75rem 0.25rem;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+        }
+        .registry-tab-btn.active {
+            color: var(--accent-primary);
+        }
+        .registry-tab-btn.active::after {
+            content: "";
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-primary);
+        }
+        .growth-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            font-weight: 700;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body data-page="registry">
+
+    <aside class="sidebar">
+        <div class="brand">
+            <h1>PréSol</h1>
+            <p data-i18n="brand-sub">STEG PV Forecasting</p>
+        </div>
+        <div class="lang-toggle">
+            <button class="lang-btn active" data-lang="en">EN</button>
+            <button class="lang-btn" data-lang="fr">FR</button>
+            <button class="lang-btn" data-lang="ar">ع</button>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html"><span class="nav-icon">⚡</span><span data-i18n="nav-national">National Overview</span></a></li>
+            <li><a href="districts.html"><span class="nav-icon">📊</span><span data-i18n="nav-regional">Regional Analysis</span></a></li>
+            <li><a href="map.html"><span class="nav-icon">🗺️</span><span data-i18n="nav-map">Spatial Timelapse</span></a></li>
+            <li><a href="performance.html"><span class="nav-icon">🔬</span><span data-i18n="nav-perf">Model Health</span></a></li>
+            <li><a href="alerts.html"><span class="nav-icon">🔔</span><span data-i18n="nav-alerts">Alerts</span><span class="nav-badge" id="nav-alert-badge">0</span></a></li>
+            <li><a href="registry.html" class="active"><span class="nav-icon">🏗️</span><span data-i18n="nav-registry">Park Registry</span></a></li>
+        </ul>
+        <div class="api-status-box">
+            <div><span class="status-indicator" id="status-dot"></span><span id="status-text">Connecting…</span></div>
+            <div class="cache-age" id="status-cap">Cap: -- MWc</div>
+            <div class="cache-age" id="cache-age-display"></div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <h2 data-i18n="registry-title">Registre Prosol & Pipeline STEG</h2>
+            <p data-i18n="registry-sub">Données officielles des 50 districts commerciaux STEG et projection dynamique du parc PV résidentiel raccordé.</p>
+        </header>
+
+        <!-- Summary KPIs -->
+        <section class="kpi-grid" id="registry-kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Puissance Raccordée</div>
+                <div class="kpi-value" id="reg-total-cap">-- <span style="font-size:1rem;color:var(--text-secondary);">MWc</span></div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Districts Commerciaux</div>
+                <div class="kpi-value" id="reg-dist-count">50 <span style="font-size:1rem;color:var(--text-secondary);">districts (7 Dir.)</span></div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Dossiers en Instance</div>
+                <div class="kpi-value" id="reg-pending">-- <span style="font-size:1rem;color:var(--text-secondary);">demandes</span></div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Taux Réalisation Moyen</div>
+                <div class="kpi-value" id="reg-exec-rate">-- <span style="font-size:1rem;color:var(--text-secondary);">%</span></div>
+            </div>
+        </section>
+
+        <!-- Tab Controls -->
+        <section class="panel">
+            <div class="registry-tabs">
+                <button class="registry-tab-btn active" id="tabBtnInventory">📋 Inventaire des 50 Districts</button>
+                <button class="registry-tab-btn" id="tabBtnPipeline">📈 Pipeline d'Extension de Capacité (30j / 90j)</button>
+            </div>
+
+            <!-- Tab 1: District Inventory View -->
+            <div id="tabContentInventory">
+                <div class="flex-row" style="margin-bottom:1rem;gap:1rem;flex-wrap:wrap;">
+                    <input type="text" id="reg-search" class="search-input" style="flex:1;margin:0;" placeholder="🔍 Filtrer par district, direction ou gouvernorat…">
+                    <select id="reg-district-filter" style="padding:8px 12px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-family:var(--font-sans);font-size:0.9rem;background:var(--bg-canvas);color:var(--text-primary);">
+                        <option value="">Toutes les Directions</option>
+                    </select>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>District Commercial</th>
+                            <th>Direction</th>
+                            <th>Gouvernorat</th>
+                            <th>Capacité (MWc)</th>
+                            <th>Salissure (%)</th>
+                            <th>Dossiers en Instance</th>
+                            <th>Taux Réalisation</th>
+                            <th>Coordonnées</th>
+                        </tr>
+                    </thead>
+                    <tbody id="registry-tbody"></tbody>
+                </table>
+            </div>
+
+            <!-- Tab 2: Capacity Expansion Pipeline View -->
+            <div id="tabContentPipeline" style="display:none;">
+                <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1rem;">
+                    Modélisation dynamique du raccordement des dossiers en attente basée sur le taux d'exécution officiel de chaque district STEG (moyenne 3.62 kWc / dossier).
+                </p>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>District Commercial</th>
+                            <th>Direction</th>
+                            <th>Capacité Actuelle</th>
+                            <th>Dossiers en Instance</th>
+                            <th>Taux d'Exécution</th>
+                            <th>Projection J+30</th>
+                            <th>Projection J+90</th>
+                            <th>Gain Net (J+90)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pipeline-tbody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Card Grid View -->
+        <section class="panel mt-1">
+            <h3 class="panel-title">Répartition Géographique par Direction STEG</h3>
+            <div class="registry-grid" id="registry-cards"></div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
