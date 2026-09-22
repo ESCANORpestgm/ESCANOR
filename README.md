@@ -85,8 +85,11 @@ models/ml_forecast.py        Horizon-aware quantile gradient boosting (P10/P50/P
 models/aggregation.py        District → national roll-up with uncertainty propagation
 models/retrain.py            Drift detection + automatic retraining (continuous learning)
 api/main.py                  FastAPI service — the grid/dispatch integration point
-dashboard/index.html         Live map, time-series, weather layer, what-if simulator,
-                            model performance panel
+dashboard/index.html         National overview entry point
+dashboard/*.html             Regional, map, performance, alerts, and registry views
+dashboard/assets/css/        Shared dashboard styles
+dashboard/assets/js/         Shared dashboard application logic
+dashboard/assets/data/       Frontend static/demo data assets
 results/metrics_by_horizon.csv  Real, regenerable backtest results
 ```
 
@@ -107,8 +110,9 @@ python models/retrain.py
 uvicorn api.main:app --reload --port 8000
 # → http://localhost:8000/docs
 
-# 4. Open dashboard/index.html in a browser (works standalone, demo data
-#    is already embedded; connects live to the API if it's running)
+# 4. Open dashboard/index.html in a browser (works standalone and connects
+#    live to the API if it's running). Shared frontend assets are under
+#    dashboard/assets/{css,js,data}.
 ```
 
 ## Mapping to STEG's requirements (Note Conceptuelle)

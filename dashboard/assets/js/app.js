@@ -70,6 +70,20 @@ const I18N = {
         'registry-sub':       'Official data for all 50 STEG commercial districts and dynamic capacity expansion projections.',
         'registry-table-title': 'District Inventory',
         'registry-cards-title': 'Capacity by Direction',
+        'districts-label':    'Commercial Districts',
+        'filter-all':         'All',
+        'table-district':     'District',
+        'table-direction':    'Direction',
+        'table-capacity':     'Capacity (MWc)',
+        'table-peak':         'Peak J+1',
+        'search-district-placeholder': '🔍 Search a STEG district…',
+        'select-district':    'Select a district',
+        'model-detail':       '🔬 Model Prediction Details (P10 / P50 / P90 & Weather)',
+        'next-48-hours':      'Next 48 hours',
+        'peak-pessimistic':   'P10 (Pessimistic)',
+        'peak-median':        'P50 (Median)',
+        'peak-optimistic':    'P90 (Optimistic)',
+        'peak-hour':          'J+1 Peak Hour',
     },
     fr: {
         'brand-sub':          'Prévision PV STEG',
@@ -106,6 +120,20 @@ const I18N = {
         'registry-sub':       'Données officielles des 50 districts commerciaux STEG et projection dynamique des raccordements.',
         'registry-table-title': 'Inventaire des districts',
         'registry-cards-title': 'Capacité par Direction',
+        'districts-label':    'Districts commerciaux',
+        'filter-all':         'Tous',
+        'table-district':     'District',
+        'table-direction':    'Direction',
+        'table-capacity':     'Cap (MWc)',
+        'table-peak':         'Pic J+1',
+        'search-district-placeholder': '🔍 Rechercher un district STEG…',
+        'select-district':    'Sélectionnez un district',
+        'model-detail':       '🔬 Détail des prédictions du modèle (P10 / P50 / P90 & météo)',
+        'next-48-hours':      'Prochaines 48 heures',
+        'peak-pessimistic':   'P10 (Pessimiste)',
+        'peak-median':        'P50 (Médian)',
+        'peak-optimistic':    'P90 (Optimiste)',
+        'peak-hour':          'Heure de pic J+1',
     },
     ar: {
         'brand-sub':          'توقعات الطاقة الشمسية — الستاغ',
@@ -142,25 +170,56 @@ const I18N = {
         'registry-sub':       'بيانات رسمية لـ 50 إقليماً تجارياً ومخطط ربط الملفات العالقة.',
         'registry-table-title': 'قائمة الأقاليم',
         'registry-cards-title': 'القدرة حسب إدارة التوزيع',
+        'districts-label':    'الأقاليم التجارية',
+        'filter-all':         'الكل',
+        'table-district':     'الإقليم',
+        'table-direction':    'الإدارة',
+        'table-capacity':     'القدرة (ميغاواط)',
+        'table-peak':         'الذروة غ+1',
+        'search-district-placeholder': '🔍 ابحث عن إقليم تابع للستاغ…',
+        'select-district':    'اختر إقليماً',
+        'model-detail':       '🔬 تفاصيل توقعات النموذج (P10 / P50 / P90 والطقس)',
+        'next-48-hours':      'الساعات الـ48 القادمة',
+        'peak-pessimistic':   'P10 (متشائم)',
+        'peak-median':        'P50 (متوسط)',
+        'peak-optimistic':    'P90 (متفائل)',
+        'peak-hour':          'ساعة الذروة غ+1',
     }
 };
 
-let currentLang = localStorage.getItem('presol-lang') || 'en';
+const SUPPORTED_LANGS = Object.freeze(Object.keys(I18N));
+let currentLang = SUPPORTED_LANGS.includes(localStorage.getItem('presol-lang'))
+    ? localStorage.getItem('presol-lang')
+    : 'en';
 
 function applyI18n(lang) {
-    currentLang = lang;
-    localStorage.setItem('presol-lang', lang);
-    document.documentElement.lang = lang;
-    document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr';
+    const safeLang = SUPPORTED_LANGS.includes(lang) ? lang : 'en';
+    currentLang = safeLang;
+    localStorage.setItem('presol-lang', safeLang);
+    document.documentElement.lang = safeLang;
+    document.documentElement.dir  = safeLang === 'ar' ? 'rtl' : 'ltr';
 
     document.querySelectorAll('.lang-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.lang === lang);
+        b.classList.toggle('active', b.dataset.lang === safeLang);
     });
 
-    const dict = I18N[lang] || I18N.en;
+    const dict = I18N[safeLang];
     document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (dict[key]) el.textContent = dict[key];
+        const value = dict[el.getAttribute('data-i18n')];
+        if (!value) return;
+
+        // Preserve badges, icons, and other nested markup inside translated headings.
+        if (el.children.length) {
+            const textNode = [...el.childNodes].find(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+            if (textNode) textNode.textContent = value;
+        } else {
+            el.textContent = value;
+        }
+    });
+
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const value = dict[el.getAttribute('data-i18n-placeholder')];
+        if (value) el.placeholder = value;
     });
 }
 

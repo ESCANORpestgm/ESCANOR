@@ -48,6 +48,7 @@ body {
     font-size: 15px;
     display: flex;
     min-height: 100vh;
+    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
 }
 
@@ -166,7 +167,7 @@ body {
 }
 
 /* ── Main Layout ──────────────────────────────────────────────────────────── */
-.main-content { flex: 1; padding: 2.25rem 2.75rem; overflow-y: auto; min-width: 0; }
+.main-content { flex: 1; min-width: 0; max-width: 100%; padding: 2.25rem 2.75rem; overflow-y: auto; overflow-x: hidden; }
 .page-header { margin-bottom: 2rem; }
 .page-header h2 {
     font-family: var(--font-serif);

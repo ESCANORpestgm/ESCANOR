@@ -5,17 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="PréSol — Granular regional PV forecast for all 50 STEG commercial districts and 7 Directions with full P10/P50/P90 model prediction breakdown.">
     <title>PréSol — Regional Analysis</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .district-grid-layout {
             display: grid;
-            grid-template-columns: 420px 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
             gap: 1.5rem;
             align-items: start;
         }
+        .district-grid-layout > * { min-width: 0; }
+        .district-grid-layout .panel { min-width: 0; max-width: 100%; }
+        .chart-wrapper { min-width: 0; max-width: 100%; overflow: hidden; }
+        #districtChart { display: block; width: 100% !important; max-width: 100%; height: 270px !important; }
+        .prediction-table-wrap { max-width: 100%; overflow: auto; }
+        .prediction-table-wrap table { min-width: 680px; }
         @media (max-width: 1080px) {
-            .district-grid-layout { grid-template-columns: 1fr; }
+            .district-grid-layout { grid-template-columns: minmax(0, 1fr); }
+        }
+        @media (max-width: 600px) {
+            .main-content { width: auto; padding: 1.25rem; }
+            .page-header { margin-bottom: 1.25rem; }
+            .page-header h2 { font-size: 1.65rem; }
+            .page-header p {
+                width: 100%;
+                max-width: 100%;
+                line-height: 1.45;
+                white-space: normal;
+                overflow-wrap: anywhere;
+            }
+            .district-grid-layout { gap: 1rem; }
+            .district-grid-layout > .panel { padding: 1rem; }
+            .filter-pill-group {
+                width: 100%;
+                flex-wrap: wrap;
+                overflow-x: visible;
+                row-gap: 0.4rem;
+            }
+            .district-grid-layout > .panel {
+                width: 100%;
+            }
+            .district-grid-layout > .panel > div[style*="overflow"] {
+                overflow-x: auto;
+            }
+            .district-grid-layout > .panel .data-table {
+                min-width: 0 !important;
+                table-layout: fixed;
+            }
+            .district-grid-layout > .panel .data-table th,
+            .district-grid-layout > .panel .data-table td {
+                padding-left: 6px;
+                padding-right: 6px;
+                overflow-wrap: anywhere;
+            }
         }
 
         .peak-card {
@@ -47,12 +89,16 @@
 
         .filter-pill-group {
             display: flex;
+            flex: 0 0 auto;
+            align-items: center;
             gap: 0.5rem;
+            min-height: 30px;
             margin-bottom: 0.75rem;
             overflow-x: auto;
             padding-bottom: 4px;
         }
         .filter-pill {
+            flex: 0 0 auto;
             background: var(--bg-surface);
             border: 1px solid var(--border-color);
             border-radius: 999px;
@@ -158,8 +204,8 @@
 
                 <input type="text" id="search-dist" class="search-input" placeholder="🔍 Rechercher un district STEG…" style="margin-bottom:0.75rem;">
 
-                <div style="flex:1; overflow-y:auto; border:1px solid var(--border-color); border-radius:var(--radius-sm);">
-                    <table class="data-table" style="margin:0;">
+                <div style="flex:1; min-width:0; min-height:0; overflow:auto; border:1px solid var(--border-color); border-radius:var(--radius-sm);">
+                    <table class="data-table" style="margin:0; min-width:390px;">
                         <thead>
                             <tr>
                                 <th>District</th>
@@ -238,6 +284,6 @@
         </div>
     </main>
 
-    <script src="app.js"></script>
+    <script src="assets/js/app.js"></script>
 </body>
 </html>
