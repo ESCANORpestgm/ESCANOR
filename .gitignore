@@ -24,3 +24,5 @@ results/model_artifacts/model_validation_metrics.json
 # Editor / OS
 .vscode/
 .DS_Store
+
+*.md
