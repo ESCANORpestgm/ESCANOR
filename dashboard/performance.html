@@ -56,8 +56,9 @@
         </section>
 
         <!-- Calibration & Uncertainty -->
-        <section class="panel">
-            <h3 class="panel-title">Calibration &amp; Uncertainty Engine <span class="title-badge">CONFORMAL</span></h3>
+        <section class="panel collapsible" data-collapse-id="calibration">
+            <h3 class="panel-title panel-head">Calibration &amp; Uncertainty Engine <span class="title-badge">CONFORMAL</span></h3>
+            <div class="panel-body">
             <p id="calibration-meta" class="text-muted" style="margin-bottom:1rem;">Loading calibration data…</p>
             <div class="training-info-grid">
                 <!-- Calibration KPIs -->
@@ -87,6 +88,7 @@
                         Per-horizon correction factors computed from calibration residuals. Values &gt; 1.0 widen the uncertainty band for longer lead times.
                     </p>
                 </div>
+            </div>
             </div>
         </section>
 
@@ -165,11 +167,12 @@
         </section>
 
         <!-- Backtest Metrics Table -->
-        <section class="panel">
-            <h3 class="panel-title" data-i18n="perf-metrics-title">
+        <section class="panel collapsible" data-collapse-id="backtest-metrics">
+            <h3 class="panel-title panel-head" data-i18n="perf-metrics-title">
                 PVGIS Backtest Metrics
                 <span class="title-badge">NOWCAST</span>
             </h3>
+            <div class="panel-body">
             <table class="data-table">
                 <thead>
                     <tr>
@@ -190,14 +193,16 @@
             <p id="metrics-error" style="color:var(--status-warn);display:none;margin-top:10px;font-size:0.85rem;">
                 ⚠️ Run the PVGIS backtest to generate metrics.
             </p>
+            </div>
         </section>
 
         <!-- Retrain History -->
-        <section class="panel">
-            <h3 class="panel-title" data-i18n="perf-retrain-title">
+        <section class="panel collapsible collapsed" data-collapse-id="retrain-log">
+            <h3 class="panel-title panel-head" data-i18n="perf-retrain-title">
                 Continuous Learning — Retrain Log
                 <span class="title-badge">AUTO</span>
             </h3>
+            <div class="panel-body">
             <p id="continuous-learning-status" class="text-muted" data-i18n="continuous-status">Checking continuous-learning schedule…</p>
             <div class="retrain-log" id="retrain-log">
                 <p style="color:var(--text-secondary);font-size:0.85rem;">No retrain events yet. Import a validated rooftop snapshot to enable hourly learning.</p>
@@ -206,14 +211,16 @@
             <div id="drift-chart-wrapper" class="chart-wrapper" style="height:260px;margin-top:1rem;display:none;">
                 <canvas id="driftBaselineChart"></canvas>
             </div>
+            </div>
         </section>
 
         <!-- Retrain Sources -->
-        <section class="panel">
-            <h3 class="panel-title" data-i18n="retrain-sources-title">
+        <section class="panel collapsible" data-collapse-id="retrain-sources">
+            <h3 class="panel-title panel-head" data-i18n="retrain-sources-title">
                 Model Retraining
                 <span class="title-badge">MANUAL</span>
             </h3>
+            <div class="panel-body">
             <p class="text-muted" style="margin-bottom:1rem;" data-i18n="retrain-sources-sub">
                 Choose a data source to retrain the quantile forecast model. The new candidate is promoted only if it outperforms the current production model.
             </p>
@@ -282,15 +289,18 @@
                 <div class="retrain-progress-bar"><div class="retrain-progress-fill"></div></div>
                 <span class="text-muted" style="font-size:0.82rem;" data-i18n="retrain-progress">Retraining in progress…</span>
             </div>
+            </div>
         </section>
 
         <!-- Immutable model registry -->
-        <section class="panel">
-            <div class="flex-between performance-toolbar" style="gap:1rem;flex-wrap:wrap;">
+        <section class="panel collapsible collapsed" data-collapse-id="model-registry">
+            <div class="flex-between performance-toolbar panel-head" style="gap:1rem;flex-wrap:wrap;">
                 <h3 class="panel-title">Model Registry <span class="title-badge">VERSIONED</span></h3>
             </div>
+            <div class="panel-body">
             <p id="production-model" class="text-muted" style="margin-bottom:0.75rem;">Loading production model…</p>
             <div class="table-scroll"><table class="data-table" id="model-versions-table"></table></div>
+            </div>
         </section>
     </main>
 

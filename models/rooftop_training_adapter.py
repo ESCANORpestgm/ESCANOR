@@ -7,10 +7,74 @@ from typing import cast
 
 import pandas as pd
 
+from data.steg_districts import DISTRICT_CAPACITY_LOOKUP
+
 REQUIRED_MEASUREMENT_COLUMNS = {
     "timestamp_utc", "location_id", "power_kw", "district", "direction",
 }
 WEATHER_COLUMNS = {"ghi_wm2", "temp_c", "cloud_cover_pct"}
+
+# Compliance thresholds for an upload to be usable for training. The model is
+# trained on district-aggregated MW; these mirror ``models.retrain`` gates.
+MIN_DAYLIGHT_PRODUCTION_MW = 0.01     # a district must exceed this during daytime
+MIN_TRAINING_TIMESTAMPS = 96          # ≥ one full day of 15-minute points
+MIN_TRAINING_SPAN_HOURS = 24.0
+DAYLIGHT_HOUR_RANGE = (6, 18)
+
+
+def assess_measurement_compliance(frame: pd.DataFrame) -> list[str]:
+    """Return human-readable reasons an uploaded CSV is not trainable (empty = OK).
+
+    Catches the two silent-failure modes that otherwise produce NaN metrics and a
+    promoted garbage model: (1) district names not in the STEG registry, and
+    (2) power that is single-site kW instead of district-aggregated MW, plus too
+    little temporal history to build train/validation folds.
+    """
+    problems: list[str] = []
+    working = frame.copy()
+    working["_ts"] = pd.to_datetime(working["timestamp_utc"], utc=True, errors="coerce")
+    working["_kw"] = pd.to_numeric(working["power_kw"], errors="coerce")
+
+    known = set(DISTRICT_CAPACITY_LOOKUP)
+    districts = working["district"].dropna().astype(str)
+    unknown = sorted(set(districts) - known)
+    if unknown:
+        shown = ", ".join(unknown[:10]) + (" …" if len(unknown) > 10 else "")
+        problems.append(
+            f"Unknown district(s) not in the STEG registry: {shown}. Use canonical "
+            f"district names (e.g. 'SFAX VILLE', 'TATAOUINE', 'GAFSA', 'ARIANA')."
+        )
+
+    distinct_ts = int(working["_ts"].nunique())
+    if distinct_ts < MIN_TRAINING_TIMESTAMPS:
+        problems.append(
+            f"Only {distinct_ts} distinct timestamps; a continuous 15-minute series "
+            f"with at least {MIN_TRAINING_TIMESTAMPS} points is required for temporal CV."
+        )
+    if working["_ts"].notna().any():
+        span_hours = float((working["_ts"].max() - working["_ts"].min()).total_seconds() / 3600)
+        if span_hours < MIN_TRAINING_SPAN_HOURS:
+            problems.append(
+                f"Time span is only {span_hours:.1f}h; at least {MIN_TRAINING_SPAN_HOURS:.0f}h of "
+                "continuous history is required to build train/validation folds."
+            )
+
+    district_level = (
+        working.dropna(subset=["_ts", "_kw", "district", "direction"])
+        .groupby(["_ts", "district", "direction"], as_index=False)["_kw"].sum()
+    )
+    district_level["_mw"] = district_level["_kw"] / 1000.0
+    daytime = district_level[
+        district_level["_ts"].dt.hour.between(*DAYLIGHT_HOUR_RANGE) & (district_level["_mw"] > 0)
+    ]["_mw"]
+    if daytime.empty or float(daytime.max()) < MIN_DAYLIGHT_PRODUCTION_MW:
+        problems.append(
+            "District-level daytime production never exceeds the "
+            f"{MIN_DAYLIGHT_PRODUCTION_MW} MW gate — the data looks like single-site kW "
+            "rather than district-aggregated MW. Scale power_kw so each "
+            "district/direction sum is a realistic fleet output (up to its installed capacity)."
+        )
+    return problems
 
 
 def _read_csv(path: Path) -> pd.DataFrame:

@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Wire Prosol modal trigger on all pages if button exists
     setupProsolReportModal();
+    initCollapsiblePanels();
 
     const page = document.body.getAttribute('data-page');
     if (page === 'home')           initHome();
@@ -29,6 +30,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (page === 'prosol-history') initProsolHistory();
     if (page === 'scenarios')      initScenarios();
 });
+
+// ── Collapsible panels (Model Health data boxes; charts stay open) ──────────
+// Each `.panel.collapsible` toggles its `.panel-body` when its `.panel-head`
+// is clicked. State is remembered in localStorage when the panel has a
+// `data-collapse-id`, and Chart.js canvases are resized when a panel reopens.
+function initCollapsiblePanels() {
+    const storageKey = id => `collapsible:${location.pathname}:${id}`;
+    document.querySelectorAll('.panel.collapsible').forEach((panel, index) => {
+        const head = panel.querySelector('.panel-head');
+        if (!head) return;
+        const collapseId = panel.dataset.collapseId || `panel-${index}`;
+        head.setAttribute('role', 'button');
+        head.setAttribute('tabindex', '0');
+
+        // Restore persisted state (HTML `collapsed` class is the default).
+        let stored = null;
+        try { stored = localStorage.getItem(storageKey(collapseId)); } catch (e) { /* storage disabled */ }
+        if (stored === 'open') panel.classList.remove('collapsed');
+        else if (stored === 'closed') panel.classList.add('collapsed');
+
+        const syncAria = () => head.setAttribute('aria-expanded', String(!panel.classList.contains('collapsed')));
+        syncAria();
+
+        const toggle = () => {
+            panel.classList.toggle('collapsed');
+            const isOpen = !panel.classList.contains('collapsed');
+            try { localStorage.setItem(storageKey(collapseId), isOpen ? 'open' : 'closed'); } catch (e) { /* ignore */ }
+            syncAria();
+            if (isOpen) window.dispatchEvent(new Event('resize'));
+        };
+
+        head.addEventListener('click', toggle);
+        head.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+        });
+    });
+}
 
 // ── Prosol Report Studio Modal (global) ─────────────────────────────────────
 

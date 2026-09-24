@@ -2,6 +2,7 @@
 
 import io
 import json
+import math
 import threading
 from pathlib import Path
 
@@ -38,6 +39,29 @@ def _write_retrain_state(state: dict[str, object]) -> None:
     write_json_atomic(RETRAIN_STATE_PATH, state)
 
 
+def _json_safe(value):
+    """Make a log row JSON-serialisable: numpy scalars to Python, NaN/Inf to None.
+
+    ``JSONResponse`` forbids NaN/Infinity, and empty log cells read back as NaN
+    while a decoded ``baseline_maes`` can carry an infinite baseline.
+    """
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(v) for v in value]
+    if isinstance(value, bool) or isinstance(value, str) or value is None:
+        return value
+    if isinstance(value, (int, float)):
+        return None if not math.isfinite(float(value)) else value
+    item = getattr(value, "item", None)
+    if callable(item):
+        try:
+            return _json_safe(item())
+        except Exception:
+            return str(value)
+    return value
+
+
 class MeteringRow(BaseModel):
     timestamp: str
     governorate: str
@@ -45,14 +69,15 @@ class MeteringRow(BaseModel):
     forecast_p50_mw: float | None = None
 
 
-def _run_retrain(training_frame: pd.DataFrame) -> None:
-    from models.retrain import check_drift_and_retrain
+def _run_retrain(training_frame: pd.DataFrame, source_label: str = "") -> None:
+    from models.retrain import append_retrain_log, check_drift_and_retrain
 
     try:
         result = check_drift_and_retrain(training_frame, _state["capacity_lookup"], _state["dust_lookup"])
         result["timestamp"] = pd.Timestamp.now().isoformat()
-        log_frame = pd.DataFrame([result])
-        append_dataframe(log_frame, RETRAIN_LOG)
+        if source_label:
+            result.setdefault("source", source_label)
+        append_retrain_log(result, RETRAIN_LOG)
         if result.get("retrained"):
             _state["models"] = None
             _state["cache_time"] = None
@@ -107,7 +132,7 @@ def start_latest_retrain() -> dict[str, object] | None:
         })
         def run_and_release() -> None:
             try:
-                _run_retrain(training_frame)
+                _run_retrain(training_frame, "snapshot")
             finally:
                 _RETRAIN_LOCK.release()
         threading.Thread(target=run_and_release, daemon=True).start()
@@ -168,7 +193,7 @@ def _save_and_start_retrain(measurement_csv: bytes, source_label: str) -> dict[s
 
         def run_and_release() -> None:
             try:
-                _run_retrain(training_frame)
+                _run_retrain(training_frame, source_label)
             finally:
                 _RETRAIN_LOCK.release()
 
@@ -209,6 +234,10 @@ async def retrain_from_csv(file: UploadFile = File(...)):
     weather_missing = weather_required - set(frame.columns)
     if weather_missing:
         raise HTTPException(400, f"CSV is missing weather columns: {sorted(weather_missing)}.")
+    from models.rooftop_training_adapter import assess_measurement_compliance
+    problems = assess_measurement_compliance(frame)
+    if problems:
+        raise HTTPException(400, "CSV is not valid training data: " + " ".join(problems))
     try:
         return _save_and_start_retrain(content, "upload")
     except HTTPException:
@@ -255,18 +284,19 @@ def retrain_status():
     }
     if not RETRAIN_LOG.exists():
         return {"retrain_log": [], "schedule": schedule, "message": "Continuous learning is waiting for a validated rooftop snapshot."}
-    log = pd.read_csv(RETRAIN_LOG)
+    from models.retrain import read_retrain_log
+    log = read_retrain_log(RETRAIN_LOG)
     # Enrich log entries with baseline breakdown when available
     records = []
     for _, row in log.sort_values("timestamp", ascending=False).head(10).iterrows():
         entry = row.to_dict()
         # Parse baseline_maes if stored as string
-        if "baseline_maes" in entry and isinstance(entry.get("baseline_maes"), str):
+        if isinstance(entry.get("baseline_maes"), str) and entry["baseline_maes"].strip():
             try:
                 entry["baseline_maes"] = json.loads(entry["baseline_maes"].replace("'", '"'))
             except (json.JSONDecodeError, ValueError):
                 entry["baseline_maes"] = {}
-        records.append(entry)
+        records.append(_json_safe(entry))
     return {"retrain_log": records, "schedule": schedule}
 
 
@@ -274,14 +304,14 @@ def retrain_status():
 def model_production():
     if MODEL_PATH.exists():
         ensure_initial_production(MODEL_PATH, {})
-    return {"production": current_production()}
+    return {"production": _json_safe(current_production())}
 
 
 @router.get("/models/versions", tags=["Model Registry"])
 def model_versions():
-    return {"models": list_model_versions()}
+    return {"models": _json_safe(list_model_versions())}
 
 
 @router.get("/models/training-runs", tags=["Model Registry"])
 def model_training_runs():
-    return {"training_runs": list_training_runs()}
+    return {"training_runs": _json_safe(list_training_runs())}

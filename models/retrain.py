@@ -18,15 +18,19 @@ if __package__ in (None, ""):  # launched as `python <dir>/<file>.py`: add the p
     import sys
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
+import json
+from pathlib import Path
 from typing import cast
 
 import numpy as np
 import pandas as pd
 
+from data.io import append_dataframe
 from data.paths import (
     CALIBRATION_PATH,
     MODEL_PATH,
     REGISTRY_ARTIFACTS_DIR,
+    RETRAIN_LOG_PATH,
 )
 from data.steg_districts import DISTRICT_CAPACITY_LOOKUP, DISTRICT_DUST_LOOKUP, STEG_DISTRICTS
 from ingestion.synthetic_data import generate_all
@@ -67,6 +71,51 @@ MINUTES_PER_HOUR = 60.0
 HOURS_PER_WEEK = 168.0
 FEATURE_VERSION = "time_weather_v2"
 SCHEMA_VERSION = "rooftop_pv_measurement_v2"
+
+# ── Retrain decision log ─────────────────────────────────────────────────────
+# The log is appended by several entry points (API upload, synthetic retrain,
+# ``python -m models.retrain``) whose result dicts carry different key sets, and
+# some values are nested (``baseline_maes``, ``horizon_scales``, ``tuned_params``).
+# Appending those raw to a CSV whose header was frozen by the first write row
+# misaligns the columns and breaks every reader. Pin one canonical, flat schema
+# and JSON-encode nested values so each appended row always matches the header.
+RETRAIN_LOG_COLUMNS = (
+    "timestamp", "source", "our_mae_mw", "baseline_maes", "best_baseline_mae_mw",
+    "drift_ratio_pct", "retrained", "candidate_promoted", "promotion_reason",
+    "training_run_id", "candidate_model_version", "candidate_mae_mw", "conformal_q",
+)
+
+
+def normalize_retrain_row(result: dict) -> dict:
+    """Flatten one retrain result into the canonical, header-aligned log row."""
+    row: dict = {}
+    for column in RETRAIN_LOG_COLUMNS:
+        value = result.get(column, "")
+        if isinstance(value, (dict, list)):
+            value = json.dumps(value)
+        elif value is None or (isinstance(value, float) and np.isnan(value)):
+            value = ""
+        row[column] = value
+    return row
+
+
+def append_retrain_log(result: dict, log_path: Path = RETRAIN_LOG_PATH) -> None:
+    """Append one normalised retrain decision, creating a canonical header if needed."""
+    append_dataframe(pd.DataFrame([normalize_retrain_row(result)], columns=list(RETRAIN_LOG_COLUMNS)), log_path)
+
+
+def read_retrain_log(log_path: Path = RETRAIN_LOG_PATH) -> pd.DataFrame:
+    """Parse the retrain log, dropping legacy/malformed rows instead of failing.
+
+    Older logs may contain rows written under a previous schema (wrong field
+    count). Those lines are skipped so a stale artifact never turns into a 500.
+    """
+    if not Path(log_path).exists():
+        return pd.DataFrame(columns=list(RETRAIN_LOG_COLUMNS))
+    try:
+        return pd.read_csv(log_path)
+    except pd.errors.ParserError:
+        return pd.read_csv(log_path, on_bad_lines="skip")
 
 
 def _compute_multi_baseline_mae(recent_df: pd.DataFrame) -> dict[str, float]:
@@ -159,6 +208,22 @@ def check_drift_and_retrain(recent_df: pd.DataFrame, capacity_lookup: dict,
     recent_df = validate_training_data(recent_df, capacity_lookup)
     if recent_df.empty:
         return {"retrained": False, "error": "All data filtered out by quality gate"}
+    if not bool((recent_df["production_mw"] > MIN_DAYLIGHT_PRODUCTION_MW).any()):
+        # No district exceeds the daylight gate: the data is sub-district (single-
+        # site kW) scale, so drift cannot be measured. Short-circuit before any
+        # model evaluation to avoid a mean over an empty slice (NaN) and a
+        # degenerate promotion.
+        return {
+            "our_mae_mw": None,
+            "retrained": False,
+            "candidate_promoted": False,
+            "error": (
+                "No daytime production above the "
+                f"{MIN_DAYLIGHT_PRODUCTION_MW} MW gate in the supplied data — it looks "
+                "like single-site kW rather than district-aggregated MW and cannot be "
+                "used for drift detection or retraining."
+            ),
+        }
 
     # Step 2: Evaluate current model on the latest 20% of data
     models = load_models(MODEL_PATH)
@@ -241,12 +306,16 @@ def check_drift_and_retrain(recent_df: pd.DataFrame, capacity_lookup: dict,
             "conformal_q": round(conformal_q, 4),
         })
 
-        # Step 7: Promote if better than current production
-        try:
-            promote_model(model_version, MODEL_PATH)
-            status["candidate_promoted"] = True
-        except ValueError as promotion_error:
-            status["promotion_reason"] = str(promotion_error)
+        # Step 7: Promote if better than current production (never on non-finite metrics)
+        candidate_mae = candidate_metrics.get("MAE_MW")
+        if candidate_mae is None or not np.isfinite(candidate_mae):
+            status["promotion_reason"] = "Candidate validation metrics are non-finite; promotion blocked."
+        else:
+            try:
+                promote_model(model_version, MODEL_PATH)
+                status["candidate_promoted"] = True
+            except ValueError as promotion_error:
+                status["promotion_reason"] = str(promotion_error)
         return status
     except Exception as error:
         finish_training_run(run_id, STATUS_FAILED, error=str(error))

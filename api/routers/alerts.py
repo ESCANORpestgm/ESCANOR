@@ -73,10 +73,11 @@ def get_alerts(
 
     # ── Model drift ─────────────────────────────────────────────────────────
     if RETRAIN_LOG.exists():
-        log = pd.read_csv(RETRAIN_LOG)
-        if not log.empty:
+        from models.retrain import read_retrain_log
+        log = read_retrain_log(RETRAIN_LOG)
+        if not log.empty and "timestamp" in log.columns:
             latest = log.sort_values("timestamp").iloc[-1]
-            drift = latest.get("drift_ratio_pct", 0)
+            drift = float(latest.get("drift_ratio_pct", 0) or 0)
             if drift > 85:
                 alerts.append({"type": "MODEL_DRIFT", "timestamp": str(latest.get("timestamp", "")), "detail": f"Model MAE is {drift:.1f}% of persistence baseline.", "severity": "warning"})
 

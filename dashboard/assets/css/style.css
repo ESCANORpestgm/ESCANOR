@@ -328,6 +328,40 @@ body {
     align-items: center;
     gap: 0.6rem;
 }
+/* Collapsible panels (Model Health): every data box except the charts can be opened/closed */
+.panel.collapsible > .panel-head {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+.panel.collapsible > .panel-head::after {
+    content: "";
+    width: 0.55rem;
+    height: 0.55rem;
+    margin-left: auto;
+    align-self: center;
+    border-right: 2px solid var(--text-secondary);
+    border-bottom: 2px solid var(--text-secondary);
+    transform: rotate(45deg);
+    transition: transform 0.15s ease;
+}
+.panel.collapsible.collapsed > .panel-head::after {
+    transform: rotate(-45deg);
+}
+.panel.collapsible > .panel-head:hover::after {
+    border-color: var(--accent, currentColor);
+}
+.panel.collapsible .panel-body {
+    margin-top: 1.25rem;
+}
+.panel.collapsible.collapsed > .panel-head {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+.panel.collapsible.collapsed .panel-body {
+    display: none;
+}
 .provenance-badge {
     display: inline-block;
     font-family: var(--font-sans);

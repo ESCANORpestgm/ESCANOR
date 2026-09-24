@@ -9,6 +9,7 @@ is flushed to a temp sibling and then renamed (rename is atomic on POSIX).
 from __future__ import annotations
 
 import json
+import math
 import os
 import tempfile
 from collections.abc import Callable
@@ -35,6 +36,22 @@ def _replace_atomically(target: Path, populate: Callable[[TextIOBase], None]) ->
     return target
 
 
+def _json_compliant(payload: Any) -> Any:
+    """Recursively replace non-finite floats (NaN/±Inf) with ``None``.
+
+    Python's ``json`` emits bare ``NaN``/``Infinity`` tokens which are not valid
+    JSON: strict parsers (browsers' ``JSON.parse``, other services) reject them.
+    Metrics from a degenerate training run can be NaN, so sanitise at the source.
+    """
+    if isinstance(payload, float) and not math.isfinite(payload):
+        return None
+    if isinstance(payload, dict):
+        return {key: _json_compliant(value) for key, value in payload.items()}
+    if isinstance(payload, (list, tuple)):
+        return [_json_compliant(value) for value in payload]
+    return payload
+
+
 def write_json_atomic(path: Path | str, payload: Any) -> Path:
     """Write ``payload`` as pretty JSON, replacing ``path`` atomically.
 
@@ -43,7 +60,7 @@ def write_json_atomic(path: Path | str, payload: Any) -> Path:
     """
     return _replace_atomically(
         Path(path),
-        lambda handle: json.dump(payload, handle, indent=2, default=str, ensure_ascii=False),
+        lambda handle: json.dump(_json_compliant(payload), handle, indent=2, default=str, ensure_ascii=False, allow_nan=False),
     )
 
 

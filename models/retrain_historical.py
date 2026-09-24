@@ -22,19 +22,13 @@ from pathlib import Path
 
 import pandas as pd
 
-from data.io import append_dataframe
-from data.paths import RETRAIN_LOG_PATH, ROOFTOP_TRAINING_DATASET_PATH
+from data.paths import ROOFTOP_TRAINING_DATASET_PATH
 from data.steg_districts import DISTRICT_CAPACITY_LOOKUP, DISTRICT_DUST_LOOKUP
-from models.retrain import check_drift_and_retrain
+from models.retrain import append_retrain_log, check_drift_and_retrain
 from models.rooftop_training_adapter import build_training_frame
 
 # Provenance tag written with every log entry from this command
 SOURCE_LABEL = "synthetic_solnet_style"
-
-
-def append_retrain_log(result: dict, log_path: Path = RETRAIN_LOG_PATH) -> None:
-    """Append one retrain decision to the log, creating it with a header if needed."""
-    append_dataframe(pd.DataFrame([result]), log_path)
 
 
 def main() -> None:
