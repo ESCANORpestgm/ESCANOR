@@ -22,7 +22,7 @@ ENSEMBLE_SEEDS = [42, 123, 456]
 # Benchmarked on RTX 4060 Laptop: CPU is faster for datasets < 500k rows with
 # shallow trees (max_depth=6) and 19 features. GPU benefits kick in at > 1M rows
 # or very wide feature spaces. Use "auto" to probe GPU availability at startup.
-USE_GPU: bool | str = True   # True | False | "auto"
+USE_GPU: bool | str = "auto"   # True | False | "auto"
 
 GPU_PARAMS = dict(
     device_type="gpu",

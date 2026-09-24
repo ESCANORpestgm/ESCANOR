@@ -90,12 +90,14 @@ def _temporal_folds(timestamps: pd.Series) -> list[tuple[pd.Series, pd.Series]]:
 def _trial_params(trial) -> dict:
     params = {}
     for name, spec in TUNING_SEARCH_SPACE.items():
-        if len(spec) == 3:
-            low, high, log = spec
-            params[name] = trial.suggest_float(name, low, high, log=log)
+        # Spec is (low, high) or (low, high, log); float bounds mean a float
+        # draw, integer bounds an int draw. Length alone is ambiguous because
+        # log-scale float specs also carry a third element.
+        low, high = spec[0], spec[1]
+        if isinstance(low, float) or isinstance(high, float):
+            params[name] = trial.suggest_float(name, low, high, log=len(spec) == 3 and bool(spec[2]))
         else:
-            low, high = spec
-            params[name] = trial.suggest_int(name, low, high)
+            params[name] = trial.suggest_int(name, int(low), int(high))
     params["verbose"] = -1
     return params
 
