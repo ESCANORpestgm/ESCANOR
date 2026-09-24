@@ -76,8 +76,14 @@ def _compute_multi_baseline_mae(recent_df: pd.DataFrame) -> dict[str, float]:
     capturing the average diurnal cycle — a strong baseline for seasonal climates.
     """
     df_sorted = recent_df.sort_values(["governorate", "timestamp"]).copy()
-    intervals = pd.to_datetime(df_sorted["timestamp"]).sort_values().diff().dropna()
+    # Measure the sampling interval on *distinct* timestamps: every governorate
+    # repeats the same timestamp, so diffing all rows yields mostly 0-second
+    # gaps and a degenerate median.
+    distinct_ts = pd.to_datetime(df_sorted["timestamp"]).drop_duplicates().sort_values()
+    intervals = distinct_ts.diff().dropna()
     median_minutes = float(intervals.dt.total_seconds().median() / MINUTES_PER_HOUR) if len(intervals) else MINUTES_PER_HOUR
+    if median_minutes <= 0:
+        median_minutes = MINUTES_PER_HOUR
     steps_24h = max(1, round(24 * MINUTES_PER_HOUR / median_minutes))
     steps_168h = max(1, round(HOURS_PER_WEEK * MINUTES_PER_HOUR / median_minutes))
 
