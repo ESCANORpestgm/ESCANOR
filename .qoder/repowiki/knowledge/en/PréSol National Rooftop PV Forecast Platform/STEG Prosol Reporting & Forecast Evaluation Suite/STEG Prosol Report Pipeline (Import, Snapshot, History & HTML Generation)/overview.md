@@ -1,1 +1,0 @@
-End-to-end pipeline that imports STEG's Prosol dashboard text into normalized JSON snapshots, persists them in SQLite, layers append-only live installation updates, and renders a print-ready HTML report.

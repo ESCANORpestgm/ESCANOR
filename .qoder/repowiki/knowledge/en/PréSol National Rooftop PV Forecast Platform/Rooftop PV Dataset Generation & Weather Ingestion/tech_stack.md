@@ -1,1 +1,0 @@
-Pandas + NumPy for tabular generation; requests for synchronous PVGIS calls; httpx + asyncio.gather for concurrent Open-Meteo forecast fetching; CSV/Parquet output via pandas I/O.

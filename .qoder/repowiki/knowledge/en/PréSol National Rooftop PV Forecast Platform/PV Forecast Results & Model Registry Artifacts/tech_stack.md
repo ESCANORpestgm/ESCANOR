@@ -1,1 +1,0 @@
-Plain-file persistence: CSV for time-series, JSON/JSONL for metadata and event logs, SQLite for operational DBs, and scikit-learn `.joblib` for serialized model artifacts.

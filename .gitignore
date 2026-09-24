@@ -14,7 +14,9 @@ reports/generated/
 
 # Editor / OS
 .vscode/
+.qoder/
 .DS_Store
 
+# Markdown docs
 *.md
 

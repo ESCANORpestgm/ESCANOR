@@ -1,1 +1,0 @@
-Client-side dashboard for the STEG national rooftop PV forecasting platform, providing multi-page visualizations of generation forecasts, district analytics, spatial timelapse maps, model health, alerts, and Prosol registry data.

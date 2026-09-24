@@ -1,1 +1,0 @@
-Pandas + NumPy for CSV-based time-series evaluation; JSON for immutable summaries/metadata; argparse CLIs for both `reports.forecast_evaluator` and `reports.historical_evaluation`.

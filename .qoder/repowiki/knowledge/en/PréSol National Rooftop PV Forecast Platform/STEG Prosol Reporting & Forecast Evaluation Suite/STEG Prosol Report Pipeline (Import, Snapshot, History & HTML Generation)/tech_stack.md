@@ -1,1 +1,0 @@
-Python standard library only: `sqlite3` for immutable snapshot storage, `jsonlines`-style `.jsonl` for append-only live updates, regex-driven parsing of `pdftotext -layout` text output, and inline CSS/HTML templating for print-ready A4 reports.

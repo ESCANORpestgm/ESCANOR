@@ -1,6 +1,0 @@
-- Model and training identifiers use a `<type>_YYYYMMDDTHHMMSSZ_<short_hash>` naming scheme (e.g. `model_...`, `training_run_id`, `update_id`) to guarantee uniqueness across runs.
-- Each model entry carries `feature_version` and `schema_version` fields so that data/model compatibility can be audited from the registry alone.
-- Append-only event streams are written as one JSON object per line in `.jsonl` files (see `installation_updates.jsonl`).
-- Forecast evaluation outputs are grouped under a unique run-id directory containing paired `actual.csv`, `forecast.csv`, and `evaluated_values.csv` plus a `summary.json`.
-- Datasets include a `dataset_version` / `source` column pair to trace provenance (e.g. `synthetic_solnet_style`, `pvGIS_district_model`).
-- Per-district PVGIS weather data is cached as one JSON file per district named `<district>_<year>_<year>.json` under `datasets/pvgis_cache/`.

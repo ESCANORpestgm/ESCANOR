@@ -1,4 +1,0 @@
-- Feature columns are declared in explicit `_BASE_FEATURES` / `_EXTENDED_FEATURES` lists and optional columns are filled with sensible defaults so downstream code never breaks on missing fields.
-- Model lifecycle is expressed through the `model_registry` functions (`create_training_run` → `register_model` → `promote_model`) rather than ad-hoc file writes, keeping training runs and model versions auditable.
-- Quantile outputs are always produced as a triplet (p10/p50/p90) and enforced to be monotonically ordered before being returned to callers.
-- Aggregation combines per-district uncertainty bands by summing half-widths in quadrature (sqrt-sum-of-squares), documented as assuming partial spatial independence of errors.

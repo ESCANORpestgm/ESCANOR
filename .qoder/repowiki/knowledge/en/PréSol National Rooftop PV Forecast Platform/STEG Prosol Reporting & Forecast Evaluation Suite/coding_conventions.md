@@ -1,3 +1,0 @@
-- Evaluation runs are persisted as immutable JSON artifacts (`summary.json` + optional `historical_metadata.json`) under fixed filesystem roots (`results/forecast_evaluations/`, `evaluations/`) rather than a database, enabling read-only discovery via `evaluation_registry`.
-- Report data flows through layered dictionaries — imported Prosol snapshot, then live installation deltas applied on top — so each stage mutates a well-defined summary shape before rendering.
-- Public entry points expose keyword-argument defaults (e.g. `snapshot_path`, `output_path`) allowing callers to override data sources while keeping the default paths inside `reports/generated/` and `results/`.

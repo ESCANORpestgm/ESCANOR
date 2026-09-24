@@ -1,1 +1,0 @@
-Scheduled retraining pipeline that compares PV forecast error against a persistence baseline and promotes improved quantile models when drift exceeds a threshold.

@@ -1,1 +1,0 @@
-FastAPI web service exposing national and district-level rooftop PV production forecasts, model retraining, diagnostics, and reporting endpoints backed by a shared in-process cache and APScheduler.

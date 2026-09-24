@@ -1,1 +1,0 @@
-Single `pip install -r requirements.txt` installs every child's dependencies; the canonical workflow is `python models/ml_forecast.py` → `python models/retrain.py` → `uvicorn api.main:app --reload --port 8000` → open `dashboard/index.html`, which auto-falls back to embedded demo data if the API is unreachable.

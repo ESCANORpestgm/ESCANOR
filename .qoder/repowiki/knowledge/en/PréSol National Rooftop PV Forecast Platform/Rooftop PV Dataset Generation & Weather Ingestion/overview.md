@@ -1,1 +1,0 @@
-Generates aggregate STEG commercial-district rooftop PV training datasets from synthetic weather or live PVGIS/Open-Meteo feeds and assembles them into a unified forecasting schema.

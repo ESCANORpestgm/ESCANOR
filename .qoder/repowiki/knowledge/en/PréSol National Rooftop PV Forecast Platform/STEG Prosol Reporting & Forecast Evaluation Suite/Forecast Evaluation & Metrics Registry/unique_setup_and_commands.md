@@ -1,1 +1,0 @@
-Run evaluations via module invocation: `python -m reports.forecast_evaluator --forecast <csv> --actual <csv> --output <dir>` and `python -m reports.historical_evaluation [--dataset <path>] [--output-root <path>]`. Outputs land under `results/forecast_evaluations/<evaluation_id>/` (summary + evaluated values) and `results/forecast_runs/<run_id>/` (raw snapshot + metadata).

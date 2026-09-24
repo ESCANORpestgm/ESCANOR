@@ -1,6 +1,0 @@
-- Snapshot payloads carry a `reconciliation` block that compares parsed district totals against hard-coded expected national figures and exposes a `passed` boolean used to gate import success.
-- Numeric fields in parsed rows use a uniform comparison shape `{current_month, previous_year_month, variance_month_pct, current_year_to_date, previous_year_to_date, variance_ytd_pct, since_program_start, unit}` produced by the shared `comparison()` helper.
-- Filesystem-backed append-only logs are written line-by-line as JSONL records with a generated `update_id` and ISO timestamp, never mutating prior entries.
-- SQLite persistence uses a single `snapshot_id` (SHA-256 of canonical JSON) as primary key across all tables, with child tables storing row order plus `payload_json` blobs for flexible sub-sections.
-- Public functions accept `Path` or string paths and create parent directories lazily via `Path.mkdir(parents=True, exist_ok=True)` before writing outputs.
-- District names are normalized to uppercase and validated against `data.steg_districts.DISTRICT_BY_NAME` before being accepted into any update or export record.

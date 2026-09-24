@@ -1,4 +1,0 @@
-- Drift detection always constructs a persistence baseline by grouping on `governorate` and shifting production by the median interval-derived step count, then compares model MAE against it.
-- Retraining follows an immutable candidate pattern: create a training run, train and evaluate candidates, register them with metrics, and promote only after successful evaluation — failures are recorded via `finish_training_run` before raising.
-- Training frames are built through a dedicated adapter (`build_training_frame`) that enforces required columns, filters by `quality_status == 'valid'`, and normalizes timestamps to naive UTC and units to MW before merging weather.
-- CLI entry points use `argparse` with sensible defaults and append structured result rows to a persistent CSV log (`RETRAIN_LOG`) rather than printing only.

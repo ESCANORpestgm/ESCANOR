@@ -1,1 +1,0 @@
-Evaluates PV forecasts against actual measurements, persists immutable evaluation runs with summary metrics, and discovers them for the reporting API.

@@ -1,6 +1,0 @@
-- Each page is identified by a `data-page="<name>"` attribute on `<body>` and its feature logic is initialized by an `initXxx()` function dispatched from the DOMContentLoaded router in `core.js`.
-- All user-facing strings are externalized via `data-i18n` keys resolved through the centralized `I18N` dictionary in `core.js`, supporting English, French, and Arabic with RTL switching for Arabic.
-- Server communication is performed exclusively via `fetch` against the single `API_BASE` constant, with error branches falling back to offline or stale-state UI messages.
-- Charts are created through the shared `makeChart()` helper which applies common defaults (responsive, zoom plugin, tooltip styling, y-axis MW formatting) so per-page code only supplies labels and datasets.
-- P10/P50/P90 uncertainty bands are rendered uniformly via the `p10p50p90Datasets()` helper, producing three series (upper bound, lower bound, median) with consistent colors and fill styles.
-- Feature modules are self-contained scripts loaded dynamically by `app.js` and expose a single `initXxx()` entry point; they do not import other JS files, keeping each page's scope isolated.

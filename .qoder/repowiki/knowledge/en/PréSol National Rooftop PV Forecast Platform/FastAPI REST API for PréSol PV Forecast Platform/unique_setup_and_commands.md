@@ -1,1 +1,0 @@
-Run via `uvicorn api.main:app --reload --port 8000`; authentication is controlled by the `PRESOL_API_KEY` environment variable read at import time and enforced through the `X-API-Key` header using `require_api_key`.

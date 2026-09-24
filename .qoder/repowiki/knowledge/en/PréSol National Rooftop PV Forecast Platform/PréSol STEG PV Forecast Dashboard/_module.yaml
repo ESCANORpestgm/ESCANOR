@@ -1,9 +1,0 @@
-schema_version: 1
-module_path: dashboard
-title: PréSol STEG PV Forecast Dashboard
-scope:
-    - dashboard/
-source_files: []
-depends_on: []
-related_to:
-    - path: api_server
