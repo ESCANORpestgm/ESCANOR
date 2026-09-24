@@ -11,11 +11,28 @@ Example:
 
 from __future__ import annotations
 
+if __package__ in (None, ""):  # launched as `python <dir>/<file>.py`: add the project root
+    import pathlib
+    import sys
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
 import argparse
 from pathlib import Path
 
-from data.generate_rooftop_dataset import generate_rooftop_dataset
 from data.generate_pvgis_rooftop_data import generate_pvgis_dataset
+from data.generate_rooftop_dataset import generate_rooftop_dataset
+from data.io import write_dataframe
+from data import paths
+
+
+def build_dataset(source: str, start: str, end: str, seed: int, cache_dir: Path) -> "object":
+    """Dispatch to the requested aggregate-district dataset source."""
+    if source == "pvgis":
+        return generate_pvgis_dataset(start, end, cache_dir)
+    frame = generate_rooftop_dataset(start, end, seed, frequency="15min")
+    frame["source"] = "synthetic_steg_style"
+    frame["dataset_version"] = "rooftop_aggregate_15min_v1"
+    return frame
 
 
 def main() -> None:
@@ -24,23 +41,14 @@ def main() -> None:
     parser.add_argument("--end", default="2021-01-01")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--source", choices=["pvgis", "synthetic"], default="pvgis")
-    parser.add_argument("--cache-dir", type=Path, default=Path("results/datasets/pvgis_cache"))
-    parser.add_argument("--output", type=Path, default=Path("results/datasets/rooftop_actual_15min.csv"))
+    parser.add_argument("--cache-dir", type=Path, default=paths.PVGIS_CACHE_DIR)
+    parser.add_argument("--output", type=Path, default=paths.ROOFTOP_TRAINING_DATASET_PATH)
     args = parser.parse_args()
 
-    if args.source == "pvgis":
-        frame = generate_pvgis_dataset(args.start, args.end, args.cache_dir)
-    else:
-        frame = generate_rooftop_dataset(args.start, args.end, args.seed, frequency="15min")
-        frame["source"] = "synthetic_steg_style"
-        frame["dataset_version"] = "rooftop_aggregate_15min_v1"
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    if args.output.suffix.lower() == ".parquet":
-        frame.to_parquet(args.output, index=False)
-    else:
-        frame.to_csv(args.output, index=False)
+    frame = build_dataset(args.source, args.start, args.end, args.seed, args.cache_dir)
+    saved = write_dataframe(frame, args.output)
     print(f"Generated {len(frame):,} 15-minute aggregate rows across {frame['district'].nunique()} districts")
-    print(f"Saved {args.source} dataset: {args.output}")
+    print(f"Saved {args.source} dataset: {saved}")
 
 
 if __name__ == "__main__":

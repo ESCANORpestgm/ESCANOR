@@ -8,10 +8,19 @@ import numpy as np
 import pandas as pd
 from fastapi import APIRouter, HTTPException
 
-from api.config import CALIBRATION_PATH, MODEL_PATH, RESULTS_DIR
-from api.services import _get_calibration
-
-from models.ml_forecast import DEFAULT_PARAMS, get_feature_cols, is_gpu_enabled
+from api.config import CALIBRATION_PATH, MODEL_PATH
+from api.services import get_calibration
+from data.paths import (
+    DAILY_HISTORY_PATH,
+    NATIONAL_HISTORY_PATH,
+    ROOFTOP_TRAINING_DATASET_PATH,
+    TRAINING_METRICS_PATH,
+    TRAINING_PROGRESSION_PATH,
+    VALIDATION_METRICS_PATH,
+    relative_to_project,
+)
+from models.artifacts import load_models
+from models.ml_forecast import DEFAULT_PARAMS, ENSEMBLE_SEEDS, get_feature_cols, is_gpu_enabled
 
 router = APIRouter(tags=["Diagnostics"])
 
@@ -21,13 +30,13 @@ router = APIRouter(tags=["Diagnostics"])
 
 @router.get("/history/rooftop")
 def rooftop_history_summary():
-    path = RESULTS_DIR / "datasets" / "rooftop_actual_15min.csv"
+    path = ROOFTOP_TRAINING_DATASET_PATH
     if not path.exists():
         raise HTTPException(404, "No PVGIS rooftop dataset found.")
     frame = pd.read_csv(path)
     district_summary = frame.drop_duplicates(subset=["district"])
     return {
-        "dataset_path": str(path.relative_to(RESULTS_DIR.parent)),
+        "dataset_path": relative_to_project(path),
         "source": str(frame["source"].iloc[0]) if not frame.empty and "source" in frame.columns else "unknown",
         "rows": len(frame),
         "districts": int(cast(Any, frame["district"].nunique())),
@@ -40,9 +49,9 @@ def rooftop_history_summary():
 
 @router.get("/history/national")
 def history_national():
-    path = RESULTS_DIR / "history_national.csv"
+    path = NATIONAL_HISTORY_PATH
     if not path.exists():
-        raise HTTPException(404, "No history found — run `python models/history.py` first.")
+        raise HTTPException(404, "No history found — run `python -m models.history` first.")
     frame = pd.read_csv(path)
     if "forecast_mw" not in frame.columns and "forecast_p50_mw" in frame.columns:
         frame["forecast_mw"] = frame["forecast_p50_mw"]
@@ -52,9 +61,9 @@ def history_national():
 @router.get("/history/daily")
 def history_daily():
     """Return daily rolling accuracy, nRMSE, coverage, and bias."""
-    path = RESULTS_DIR / "history_daily.csv"
+    path = DAILY_HISTORY_PATH
     if not path.exists():
-        raise HTTPException(404, "No daily history found — run `python models/history.py` first.")
+        raise HTTPException(404, "No daily history found — run `python -m models.history` first.")
     return pd.read_csv(path).to_dict(orient="records")
 
 
@@ -63,9 +72,9 @@ def history_daily():
 
 @router.get("/metrics")
 def metrics():
-    path = RESULTS_DIR / "metrics_by_horizon.csv"
+    path = TRAINING_METRICS_PATH
     if not path.exists():
-        raise HTTPException(404, "No metrics found — run `python models/ml_forecast.py` first.")
+        raise HTTPException(404, "No metrics found — run `python -m models.ml_forecast` first.")
     frame = pd.read_csv(path).rename(columns={
         "horizon": "horizon_bucket",
         "nRMSE_ours_%": "nrmse_ours_pct",
@@ -85,7 +94,7 @@ def metrics():
 
 @router.get("/model/validation")
 def model_validation():
-    path = RESULTS_DIR / "model_validation_metrics.json"
+    path = VALIDATION_METRICS_PATH
     if not path.exists():
         raise HTTPException(404, "No model validation metrics found — run python -m models.validation_report first.")
     try:
@@ -100,9 +109,9 @@ def model_validation():
 @router.get("/model/training-progression")
 def training_progression():
     """Return per-training-run progression showing how the model learned."""
-    path = RESULTS_DIR / "training_progression.csv"
+    path = TRAINING_PROGRESSION_PATH
     if not path.exists():
-        raise HTTPException(404, "No training progression found — run `python models/history.py` first.")
+        raise HTTPException(404, "No training progression found — run `python -m models.history` first.")
     frame = pd.read_csv(path)
     # Replace NaN/NaT with None for JSON serialization
     records = frame.to_dict(orient="records")
@@ -119,21 +128,20 @@ def training_progression():
 def model_training_info():
     """Return calibration data, feature importances, and training metadata."""
     # ── Calibration ─────────────────────────────────────────────────────────
-    calibration = _get_calibration()
+    calibration = get_calibration()
 
     # ── Feature importances (averaged across ensemble P50 models) ───────────
     feature_importance: list[dict[str, Any]] = []
     model_info: dict[str, Any] = {
         "model_type": "LightGBM Quantile Regression",
         "quantiles": ["p10", "p50", "p90"],
-        "ensemble_seeds": [42, 123, 456],
+        "ensemble_seeds": list(ENSEMBLE_SEEDS),
         "default_params": {k: v for k, v in DEFAULT_PARAMS.items() if k != "verbose"},
         "gpu_enabled": is_gpu_enabled(),
     }
     if MODEL_PATH.exists():
         try:
-            import joblib as _joblib
-            models = _joblib.load(MODEL_PATH)
+            models = load_models(MODEL_PATH)
             feature_cols = models.get("_feature_cols", get_feature_cols())
             p50_raw = models.get("p50", [])
             # Handle both single-model (legacy) and ensemble list formats
@@ -162,7 +170,7 @@ def model_training_info():
         "calibration": {
             "conformal_q": round(calibration.get("conformal_q", 0.0), 4),
             "horizon_scales": calibration.get("horizon_scales", {}),
-            "calibration_file": str(CALIBRATION_PATH.relative_to(RESULTS_DIR.parent)),
+            "calibration_file": relative_to_project(CALIBRATION_PATH),
             "exists": CALIBRATION_PATH.exists(),
         },
         "feature_importance": feature_importance,

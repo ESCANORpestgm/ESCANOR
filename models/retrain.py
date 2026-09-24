@@ -13,37 +13,60 @@ Workflow:
 Run: python models/retrain.py
 """
 
-import os
-import sys
-from pathlib import Path
+if __package__ in (None, ""):  # launched as `python <dir>/<file>.py`: add the project root
+    import pathlib
+    import sys
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
 from typing import cast
 
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from data.paths import (
+    CALIBRATION_PATH,
+    MODEL_PATH,
+    REGISTRY_ARTIFACTS_DIR,
+)
 from data.steg_districts import DISTRICT_CAPACITY_LOOKUP, DISTRICT_DUST_LOOKUP, STEG_DISTRICTS
 from ingestion.synthetic_data import generate_all
-from models.ml_forecast import (
-    train_quantile_models, predict, evaluate, load_models, save_models,
-    validate_training_data, conformal_calibrate, calibrate_horizon_scales,
-    save_calibration, tune_hyperparameters,
+from models.artifacts import load_models, save_models
+from models.calibration import (
+    calibrate_horizon_scales,
+    conformal_calibrate,
+    save_calibration,
 )
+from models.evaluation import evaluate
+from models.features import validate_training_data
+from models.inference import FORECAST_P50_COLUMN, predict
 from models.model_registry import (
-    REGISTRY_DIR,
+    STATUS_CANDIDATE,
+    STATUS_FAILED,
     create_training_run,
     ensure_initial_production,
     finish_training_run,
     promote_model,
     register_model,
 )
+from models.training import train_quantile_models, tune_hyperparameters
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "artifacts", "quantile_models.joblib")
-CALIBRATION_PATH = os.path.join(os.path.dirname(__file__), "..", "results", "calibration.json")
-DRIFT_THRESHOLD_PCT = 15.0  # retrain if our model's error is within 15% of best baseline
+# Retrain when our error is within this percentage of the best baseline: the
+# model has stopped adding value over trivial persistence/climatology.
+DRIFT_THRESHOLD_PCT = 15.0
 TEMPORAL_CV_FOLDS = 3       # expanding-window temporal cross-validation folds
+TEMPORAL_CV_RANGE = (0.5, 0.85)
+# Share of the history used for the final fit, and the slice reserved for
+# conformal calibration (between the two quantiles).
+FINAL_TRAIN_FRACTION = 0.8
+CALIBRATION_FRACTION = 0.7
+VALIDATION_FRACTION = 0.8
 USE_TUNING = False          # set True to enable Optuna tuning during retrain
 TUNING_TRIALS = 15          # Optuna trials when USE_TUNING is True
+MIN_DAYLIGHT_PRODUCTION_MW = 0.01
+MINUTES_PER_HOUR = 60.0
+HOURS_PER_WEEK = 168.0
+FEATURE_VERSION = "time_weather_v2"
+SCHEMA_VERSION = "rooftop_pv_measurement_v2"
 
 
 def _compute_multi_baseline_mae(recent_df: pd.DataFrame) -> dict[str, float]:
@@ -54,9 +77,9 @@ def _compute_multi_baseline_mae(recent_df: pd.DataFrame) -> dict[str, float]:
     """
     df_sorted = recent_df.sort_values(["governorate", "timestamp"]).copy()
     intervals = pd.to_datetime(df_sorted["timestamp"]).sort_values().diff().dropna()
-    intervals_min = float(intervals.dt.total_seconds().median() / 60) if len(intervals) > 0 else 60.0
-    steps_24h = max(1, round(24 * 60 / intervals_min))
-    steps_168h = max(1, round(168 * 60 / intervals_min))
+    median_minutes = float(intervals.dt.total_seconds().median() / MINUTES_PER_HOUR) if len(intervals) else MINUTES_PER_HOUR
+    steps_24h = max(1, round(24 * MINUTES_PER_HOUR / median_minutes))
+    steps_168h = max(1, round(HOURS_PER_WEEK * MINUTES_PER_HOUR / median_minutes))
 
     df_sorted["persist_24h"] = df_sorted.groupby("governorate")["production_mw"].shift(steps_24h)
     df_sorted["persist_168h"] = df_sorted.groupby("governorate")["production_mw"].shift(steps_168h)
@@ -90,7 +113,7 @@ def _temporal_cv_train(df: pd.DataFrame, capacity_lookup: dict, dust_lookup: dic
     fold_mae_list: list[float] = []
     last_metrics: dict | None = None
 
-    fold_fracs = np.linspace(0.5, 0.85, TEMPORAL_CV_FOLDS)
+    fold_fracs = np.linspace(*TEMPORAL_CV_RANGE, TEMPORAL_CV_FOLDS)
     for frac in fold_fracs:
         cutoff = timestamps.quantile(frac)
         train_df = cast(pd.DataFrame, df[timestamps < cutoff])
@@ -115,7 +138,7 @@ def _temporal_cv_train(df: pd.DataFrame, capacity_lookup: dict, dust_lookup: dic
     }
 
     # Final model trained on 80% of data
-    final_train_cutoff = timestamps.quantile(0.8)
+    final_train_cutoff = timestamps.quantile(FINAL_TRAIN_FRACTION)
     final_train_df = cast(pd.DataFrame, df[timestamps < final_train_cutoff])
     final_models = train_quantile_models(final_train_df, capacity_lookup, dust_lookup,
                                           params=params, use_ensemble=True)
@@ -134,21 +157,21 @@ def check_drift_and_retrain(recent_df: pd.DataFrame, capacity_lookup: dict,
     # Step 2: Evaluate current model on the latest 20% of data
     models = load_models(MODEL_PATH)
     timestamps = pd.to_datetime(recent_df["timestamp"])
-    cutoff = timestamps.quantile(0.8)
+    cutoff = timestamps.quantile(VALIDATION_FRACTION)
     validation_df = cast(pd.DataFrame, recent_df.loc[timestamps >= cutoff])
     baseline_frame: pd.DataFrame = validation_df if not validation_df.empty else recent_df
     current_metrics = evaluate(models, baseline_frame, capacity_lookup, dust_lookup)
 
     preds = predict(models, recent_df, capacity_lookup, dust_lookup)
-    daylight = preds["production_mw"] > 0.01
-    our_mae = float((preds.loc[daylight, "forecast_p50_mw"] - preds.loc[daylight, "production_mw"]).abs().mean())
+    daylight = preds["production_mw"] > MIN_DAYLIGHT_PRODUCTION_MW
+    our_mae = float((preds.loc[daylight, FORECAST_P50_COLUMN] - preds.loc[daylight, "production_mw"]).abs().mean())
 
     # Step 3: Multi-baseline drift detection
     baseline_maes = _compute_multi_baseline_mae(recent_df)
     best_baseline_mae = min(baseline_maes.values())
     drift_pct = 100 * our_mae / best_baseline_mae if best_baseline_mae > 0 else 0
 
-    ensure_initial_production(Path(MODEL_PATH), current_metrics)
+    ensure_initial_production(MODEL_PATH, current_metrics)
     status: dict = {
         "our_mae_mw": round(our_mae, 3),
         "baseline_maes": {k: round(v, 3) for k, v in baseline_maes.items()},
@@ -163,7 +186,7 @@ def check_drift_and_retrain(recent_df: pd.DataFrame, capacity_lookup: dict,
     # Step 4: Train candidate with temporal CV
     run_id = create_training_run(
         str(recent_df["timestamp"].min()), str(recent_df["timestamp"].max()),
-        "time_weather_v2", "rooftop_pv_measurement_v2",
+        FEATURE_VERSION, SCHEMA_VERSION,
         "validated rooftop measurements (quality-gated)",
     )
     try:
@@ -184,7 +207,7 @@ def check_drift_and_retrain(recent_df: pd.DataFrame, capacity_lookup: dict,
             recent_df, capacity_lookup, dust_lookup, params=params)
 
         # Step 5: Conformal calibration on the 70-80% slice
-        cal_split = timestamps.quantile(0.7)
+        cal_split = timestamps.quantile(CALIBRATION_FRACTION)
         df_cal = cast(pd.DataFrame, recent_df[(timestamps >= cal_split) & (timestamps < cutoff)])
         conformal_q = conformal_calibrate(candidate_models, df_cal, capacity_lookup, dust_lookup)
         horizon_scales = calibrate_horizon_scales(candidate_models, df_cal, capacity_lookup, dust_lookup)
@@ -197,12 +220,12 @@ def check_drift_and_retrain(recent_df: pd.DataFrame, capacity_lookup: dict,
         candidate_metrics["horizon_scales"] = horizon_scales
         candidate_metrics["cv_avg_mae"] = cv_metrics.get("MAE_MW")
 
-        candidate_path = REGISTRY_DIR / "artifacts" / f"candidate_{run_id}.joblib"
-        save_models(candidate_models, str(candidate_path))
+        candidate_path = REGISTRY_ARTIFACTS_DIR / f"candidate_{run_id}.joblib"
+        save_models(candidate_models, candidate_path)
         model_version = register_model(
-            run_id, str(candidate_path), candidate_metrics,
+            run_id, candidate_path, candidate_metrics,
             str(train_df["timestamp"].min()), str(train_df["timestamp"].max()),
-            "time_weather_v2", "rooftop_pv_measurement_v2", "candidate",
+            FEATURE_VERSION, SCHEMA_VERSION, STATUS_CANDIDATE,
         )
         status.update({
             "retrained": True,
@@ -214,13 +237,13 @@ def check_drift_and_retrain(recent_df: pd.DataFrame, capacity_lookup: dict,
 
         # Step 7: Promote if better than current production
         try:
-            promote_model(model_version, Path(MODEL_PATH))
+            promote_model(model_version, MODEL_PATH)
             status["candidate_promoted"] = True
         except ValueError as promotion_error:
             status["promotion_reason"] = str(promotion_error)
         return status
     except Exception as error:
-        finish_training_run(run_id, "failed", error=str(error))
+        finish_training_run(run_id, STATUS_FAILED, error=str(error))
         raise
 
 

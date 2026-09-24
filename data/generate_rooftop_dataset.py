@@ -13,31 +13,43 @@ Example:
 
 from __future__ import annotations
 
+if __package__ in (None, ""):  # launched as `python <dir>/<file>.py`: add the project root
+    import pathlib
+    import sys
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
 import argparse
 from pathlib import Path
-from typing import cast
 
 import numpy as np
 import pandas as pd
 
+from data.features import add_cyclic_time_features
+from data.io import write_dataframe
+from data.schema import (
+    AGGREGATE_DATASET_COLUMNS,
+    add_irradiance_decomposition,
+    implied_pv_count,
+    interval_hours,
+    make_location_id,
+)
 from data.steg_districts import AVG_UNIT_KWC, STEG_DISTRICTS
 from ingestion import synthetic_data
 from ingestion.synthetic_data import generate_all
 
-
 DATASET_VERSION = "rooftop_aggregate_v1"
 
 
-def _cyclic_features(frame: pd.DataFrame) -> pd.DataFrame:
-    frame = frame.copy()
-    timestamps = pd.to_datetime(frame["timestamp"], utc=True)
-    hour = timestamps.dt.hour + timestamps.dt.minute / 60
-    day_of_year = timestamps.dt.dayofyear
-    frame["hour_sin"] = np.sin(2 * np.pi * hour / 24)
-    frame["hour_cos"] = np.cos(2 * np.pi * hour / 24)
-    frame["day_of_year_sin"] = np.sin(2 * np.pi * day_of_year / 365.25)
-    frame["day_of_year_cos"] = np.cos(2 * np.pi * day_of_year / 365.25)
-    return frame
+def _select_districts(districts: list[str] | None):
+    """Resolve requested district names, failing on any unknown label."""
+    if not districts:
+        return STEG_DISTRICTS
+    requested = {name.upper() for name in districts}
+    selected = [d for d in STEG_DISTRICTS if d.name.upper() in requested]
+    missing = requested - {d.name.upper() for d in selected}
+    if missing:
+        raise ValueError(f"Unknown STEG districts: {sorted(missing)}")
+    return selected
 
 
 def generate_rooftop_dataset(
@@ -54,50 +66,34 @@ def generate_rooftop_dataset(
     aggregate capacity using the official Prosol average unit size of 3.62 kWc.
     """
     synthetic_data.RNG = np.random.default_rng(seed)
-    selected = STEG_DISTRICTS
-    if districts:
-        requested = {name.upper() for name in districts}
-        selected = [district for district in STEG_DISTRICTS if district.name.upper() in requested]
-        missing = requested - {district.name.upper() for district in selected}
-        if missing:
-            raise ValueError(f"Unknown STEG districts: {sorted(missing)}")
+    selected = _select_districts(districts)
 
     frame = generate_all(selected, start=start, end=end, frequency=frequency).copy()
-    timestamps = pd.to_datetime(frame["timestamp"], utc=True)
-    frame["timestamp_utc"] = timestamps.astype(str)
-    frame["location_id"] = "district:" + frame["steg_district"].astype(str)
+    frame["timestamp_utc"] = pd.to_datetime(frame["timestamp"], utc=True).astype(str)
+    frame["location_id"] = frame["steg_district"].map(make_location_id)
     frame["district"] = frame["steg_district"]
-    frame["direction"] = frame["direction"].astype(str)
-    frame["system_size_kwc"] = AVG_UNIT_KWC
-    capacity_by_name = {district.name: district.installed_capacity_mwc * 1000 for district in selected}
-    frame["installed_capacity_kwp"] = frame["governorate"].map(lambda name: capacity_by_name.get(name))
-    frame["pv_count"] = np.rint(frame["installed_capacity_kwp"] / AVG_UNIT_KWC).astype("int64")
-    tilt_by_name = {district.name: district.tilt_deg for district in selected}
-    azimuth_by_name = {district.name: district.azimuth_deg for district in selected}
-    frame["tilt_deg"] = frame["governorate"].map(lambda name: tilt_by_name.get(name))
-    frame["azimuth_deg"] = frame["governorate"].map(lambda name: azimuth_by_name.get(name))
 
-    # These are standardized aggregate assumptions, not per-rooftop geometry.
-    frame["dni_wm2"] = frame["ghi_wm2"] * 0.60
-    frame["dhi_wm2"] = frame["ghi_wm2"] * 0.40
-    frame["wind_speed_ms"] = 3.0
+    capacity_by_name = {d.name: d.installed_capacity_mwc * 1000 for d in selected}
+    tilt_by_name = {d.name: d.tilt_deg for d in selected}
+    azimuth_by_name = {d.name: d.azimuth_deg for d in selected}
+    frame["system_size_kwc"] = AVG_UNIT_KWC
+    frame["installed_capacity_kwp"] = frame["district"].map(capacity_by_name)
+    frame["pv_count"] = frame["installed_capacity_kwp"].map(implied_pv_count)
+    frame["tilt_deg"] = frame["district"].map(tilt_by_name)
+    frame["azimuth_deg"] = frame["district"].map(azimuth_by_name)
+
+    # Standardized aggregate assumptions, not per-rooftop geometry.
+    add_irradiance_decomposition(frame)
     frame["power_kw"] = frame["production_mw"] * 1000
-    interval_hours = pd.Timedelta(frequency).total_seconds() / 3600
-    frame["energy_kwh"] = frame["power_kw"] * interval_hours
+    frame["energy_kwh"] = frame["power_kw"] * interval_hours(frequency)
     frame["quality_status"] = "valid"
     frame["source"] = "synthetic_solnet_style"
     frame["dataset_version"] = DATASET_VERSION
-    frame = _cyclic_features(frame)
+    frame = add_cyclic_time_features(frame, "timestamp_utc")
 
-    columns = [
-        "timestamp_utc", "location_id", "district", "direction", "pv_count",
-        "system_size_kwc", "installed_capacity_kwp", "tilt_deg", "azimuth_deg",
-        "ghi_wm2", "dni_wm2", "dhi_wm2", "temp_c", "cloud_cover_pct",
-        "wind_speed_ms", "horizon_hours", "hour_sin", "hour_cos",
-        "day_of_year_sin", "day_of_year_cos", "power_kw", "energy_kwh",
-        "quality_status", "source", "dataset_version",
-    ]
-    return cast(pd.DataFrame, frame[columns].sort_values(["district", "timestamp_utc"]).reset_index(drop=True))
+    return frame[list(AGGREGATE_DATASET_COLUMNS)].sort_values(
+        ["district", "timestamp_utc"]
+    ).reset_index(drop=True)
 
 
 def main() -> None:
@@ -111,13 +107,9 @@ def main() -> None:
     args = parser.parse_args()
 
     dataset = generate_rooftop_dataset(args.start, args.end, args.seed, args.districts, args.frequency)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    if args.output.suffix.lower() == ".parquet":
-        dataset.to_parquet(args.output, index=False)
-    else:
-        dataset.to_csv(args.output, index=False)
+    saved = write_dataframe(dataset, args.output)
     print(f"Generated {len(dataset):,} aggregate rooftop-PV rows across {dataset['district'].nunique()} districts")
-    print(f"Saved dataset: {args.output}")
+    print(f"Saved dataset: {saved}")
 
 
 if __name__ == "__main__":

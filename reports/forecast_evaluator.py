@@ -7,23 +7,62 @@ Forecast CSV columns:
 Actual CSV columns:
     timestamp_utc, location_id, power_kw
 
+Evaluation runs are written under ``data.paths.EVALUATIONS_DIR``; sources are
+recorded project-relative so a run stays readable after the repository moves.
+
 Usage:
     python -m reports.forecast_evaluator \
         --forecast forecast.csv \
         --actual results/measurements/.../validated_measurements.csv \
-        --output results/forecast_evaluations/run.json
+        --output results/evaluations/run.json
 """
 
 from __future__ import annotations
 
+if __package__ in (None, ""):  # launched as `python <dir>/<file>.py`: add the project root
+    import pathlib
+    import sys
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
 import argparse
-import json
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
 import numpy as np
 import pandas as pd
+
+from data.io import write_dataframe, write_json_atomic
+from data.paths import relative_to_project
+
+# Input contract, in the unit the metering schema stores
+FORECAST_REQUIRED_COLUMNS = frozenset({
+    "forecast_created_at", "target_timestamp_utc", "location_id",
+    "forecast_p10_kw", "forecast_p50_kw", "forecast_p90_kw",
+})
+ACTUAL_REQUIRED_COLUMNS = frozenset({"timestamp_utc", "location_id", "power_kw"})
+# Optional grouping columns carried from the actual measurements into the
+# report. The carry order fixes the column order of evaluated_values.csv, the
+# group order the precedence of the geographic breakdown.
+ACTUAL_GEOGRAPHY_COLUMNS = ("district", "direction")
+GEOGRAPHY_GROUP_COLUMNS = ("direction", "district")
+POWER_UNIT = "kW"
+MINUTES_PER_HOUR = 60.0
+# Lead-time horizons, in minutes, matching the dashboard forecast buckets
+HORIZON_NOWCAST = "nowcast_0_1h"
+HORIZON_SHORT_TERM = "short_term_1_6h"
+HORIZON_DAY_AHEAD = "day_ahead_6_24h"
+HORIZON_EXTENDED = "extended_24h_plus"
+HORIZON_NOWCAST_MAX_MINUTES = MINUTES_PER_HOUR
+HORIZON_SHORT_TERM_MAX_MINUTES = 6 * MINUTES_PER_HOUR
+HORIZON_DAY_AHEAD_MAX_MINUTES = 24 * MINUTES_PER_HOUR
+SECONDS_PER_MINUTE = 60.0
+# Files that make up an immutable run; the directory name is the evaluation id
+FORECAST_VALUES_FILENAME = "forecast_values.csv"
+RUN_METADATA_FILENAME = "run_metadata.json"
+EVALUATED_VALUES_FILENAME = "evaluated_values.csv"
+SUMMARY_FILENAME = "summary.json"
+FORECAST_RUNS_SUBDIR = "forecast_runs"
 
 
 def save_forecast_snapshot(
@@ -34,20 +73,12 @@ def save_forecast_snapshot(
     weather_source: str | None = None,
 ) -> Path:
     """Save a forecast run and values without overwriting previous runs."""
-    required = {
-        "forecast_created_at",
-        "target_timestamp_utc",
-        "location_id",
-        "forecast_p10_kw",
-        "forecast_p50_kw",
-        "forecast_p90_kw",
-    }
-    missing = required - set(forecast.columns)
+    missing = FORECAST_REQUIRED_COLUMNS - set(forecast.columns)
     if missing:
         raise ValueError(f"Missing forecast columns: {sorted(missing)}")
 
     run_id = f"forecast_{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}_{uuid4().hex[:8]}"
-    run_dir = output_root / "forecast_runs" / run_id
+    run_dir = output_root / FORECAST_RUNS_SUBDIR / run_id
     run_dir.mkdir(parents=True, exist_ok=False)
 
     values = forecast.copy()
@@ -56,8 +87,8 @@ def save_forecast_snapshot(
     values["run_id"] = run_id
     values["lead_time_minutes"] = (
         values["target_timestamp_utc"] - values["forecast_created_at"]
-    ).dt.total_seconds().div(60)
-    values.to_csv(run_dir / "forecast_values.csv", index=False)
+    ).dt.total_seconds().div(SECONDS_PER_MINUTE)
+    write_dataframe(values, run_dir / FORECAST_VALUES_FILENAME)
 
     metadata = {
         "run_id": run_id,
@@ -70,18 +101,18 @@ def save_forecast_snapshot(
         "target_start": values["target_timestamp_utc"].min().isoformat(),
         "target_end": values["target_timestamp_utc"].max().isoformat(),
     }
-    (run_dir / "run_metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+    write_json_atomic(run_dir / RUN_METADATA_FILENAME, metadata)
     return run_dir
 
 
 def _horizon_bucket(minutes: float) -> str:
-    if minutes < 60:
-        return "nowcast_0_1h"
-    if minutes < 6 * 60:
-        return "short_term_1_6h"
-    if minutes < 24 * 60:
-        return "day_ahead_6_24h"
-    return "extended_24h_plus"
+    if minutes < HORIZON_NOWCAST_MAX_MINUTES:
+        return HORIZON_NOWCAST
+    if minutes < HORIZON_SHORT_TERM_MAX_MINUTES:
+        return HORIZON_SHORT_TERM
+    if minutes < HORIZON_DAY_AHEAD_MAX_MINUTES:
+        return HORIZON_DAY_AHEAD
+    return HORIZON_EXTENDED
 
 
 def _metric_row(group: pd.DataFrame, group_name: str, value: object) -> dict:
@@ -101,13 +132,8 @@ def _metric_row(group: pd.DataFrame, group_name: str, value: object) -> dict:
 
 
 def _validate_evaluation_schema(forecast: pd.DataFrame, actual: pd.DataFrame) -> None:
-    forecast_required = {
-        "forecast_created_at", "target_timestamp_utc", "location_id",
-        "forecast_p10_kw", "forecast_p50_kw", "forecast_p90_kw",
-    }
-    actual_required = {"timestamp_utc", "location_id", "power_kw"}
-    missing_forecast = forecast_required - set(forecast.columns)
-    missing_actual = actual_required - set(actual.columns)
+    missing_forecast = FORECAST_REQUIRED_COLUMNS - set(forecast.columns)
+    missing_actual = ACTUAL_REQUIRED_COLUMNS - set(actual.columns)
     if missing_forecast:
         raise ValueError(f"Forecast is missing required kW columns: {sorted(missing_forecast)}")
     if missing_actual:
@@ -117,6 +143,12 @@ def _validate_evaluation_schema(forecast: pd.DataFrame, actual: pd.DataFrame) ->
 
 
 def evaluate_forecast(forecast_path: Path, actual_path: Path, output_dir: Path) -> Path:
+    """Join a stored forecast with measurements and write the run's summary.
+
+    Rows are matched on ``(location_id, target_timestamp)``; the summary keeps
+    per-location, per-horizon and (when the inputs carry them) per-Direction /
+    per-district metrics. Returns the path of the written ``summary.json``.
+    """
     forecast = pd.read_csv(forecast_path)
     actual = pd.read_csv(actual_path)
     _validate_evaluation_schema(forecast, actual)
@@ -124,7 +156,7 @@ def evaluate_forecast(forecast_path: Path, actual_path: Path, output_dir: Path) 
     actual["timestamp_utc"] = pd.to_datetime(actual["timestamp_utc"], utc=True)
 
     actual_columns = ["location_id", "timestamp_utc", "power_kw"]
-    for column in ("district", "direction"):
+    for column in ACTUAL_GEOGRAPHY_COLUMNS:
         if column in actual.columns and column not in forecast.columns:
             actual_columns.append(column)
 
@@ -147,7 +179,7 @@ def evaluate_forecast(forecast_path: Path, actual_path: Path, output_dir: Path) 
     merged["lead_time_minutes"] = (
         pd.to_datetime(merged["target_timestamp_utc"], utc=True)
         - pd.to_datetime(merged["forecast_created_at"], utc=True)
-    ).dt.total_seconds().div(60)
+    ).dt.total_seconds().div(SECONDS_PER_MINUTE)
     merged["horizon_bucket"] = merged["lead_time_minutes"].map(_horizon_bucket)
 
     location_metrics = [
@@ -159,7 +191,7 @@ def evaluate_forecast(forecast_path: Path, actual_path: Path, output_dir: Path) 
         for bucket, group in merged.groupby("horizon_bucket", sort=False)
     ]
 
-    group_columns = [column for column in ("direction", "district") if column in merged.columns]
+    group_columns = [column for column in GEOGRAPHY_GROUP_COLUMNS if column in merged.columns]
     geographic_metrics = []
     if group_columns:
         for group_values, group in merged.groupby(group_columns, dropna=False):
@@ -170,22 +202,22 @@ def evaluate_forecast(forecast_path: Path, actual_path: Path, output_dir: Path) 
             geographic_metrics.append(metric)
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    evaluated_path = output_dir / "evaluated_values.csv"
-    summary_path = output_dir / "summary.json"
-    merged.to_csv(evaluated_path, index=False)
+    evaluated_path = output_dir / EVALUATED_VALUES_FILENAME
+    summary_path = output_dir / SUMMARY_FILENAME
+    write_dataframe(merged, evaluated_path)
     summary = {
         "evaluation_id": output_dir.name,
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "forecast_source": str(forecast_path),
-        "actual_source": str(actual_path),
-        "power_unit": "kW",
+        "forecast_source": relative_to_project(forecast_path),
+        "actual_source": relative_to_project(actual_path),
+        "power_unit": POWER_UNIT,
         "rows_matched": len(merged),
         "metrics": location_metrics,
         "horizon_metrics": horizon_metrics,
     }
     if geographic_metrics:
         summary["geographic_metrics"] = geographic_metrics
-    summary_path.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
+    write_json_atomic(summary_path, summary)
     return summary_path
 
 

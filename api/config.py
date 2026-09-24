@@ -1,46 +1,44 @@
-"""Static configuration — paths, lookups, and authentication.
+"""Static configuration — artifact paths, domain lookups and authentication.
 
-This module is a leaf dependency: it imports nothing from ``api.services``
-or ``api.routers``, so every other module can safely import from it.
+This module is a leaf dependency: it imports nothing from ``api.services`` or
+``api.routers``, so every other API module can safely import from it.
+
+Artifact locations are **re-exported** from :mod:`data.paths`, the platform's
+single source of truth for on-disk locations: the routers keep importing them
+from here, while the definitions (and the categorised ``results/`` layout) live
+in one place only.
 """
 
 from __future__ import annotations
 
 import os
-import sys
-from pathlib import Path
 
 from fastapi import HTTPException, Security
 from fastapi.security.api_key import APIKeyHeader
 
-# Ensure project root is on sys.path for bare imports (data/, models/, …)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from data.steg_districts import (
-    DISTRICT_CAPACITY_LOOKUP,
-    DISTRICT_DUST_LOOKUP,
-    GOVERNORATES,
-)
+from data import paths
+from data.steg_districts import DISTRICT_CAPACITY_LOOKUP, DISTRICT_DUST_LOOKUP
 
-# ── Paths ────────────────────────────────────────────────────────────────────
+# ── Paths (re-exported from data.paths) ──────────────────────────────────────
 
-ROOT = Path(__file__).resolve().parents[1]
-MODEL_PATH = ROOT / "models" / "artifacts" / "quantile_models.joblib"
-CALIBRATION_PATH = ROOT / "results" / "calibration.json"
-RESULTS_DIR = ROOT / "results"
-METER_BUFFER = RESULTS_DIR / "metering_buffer.csv"
-RETRAIN_LOG = RESULTS_DIR / "retrain_log.csv"
-RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+PROJECT_ROOT = paths.PROJECT_ROOT
+MODEL_PATH = paths.MODEL_PATH
+CALIBRATION_PATH = paths.CALIBRATION_PATH
+METER_BUFFER = paths.METER_BUFFER_PATH
+RETRAIN_LOG = paths.RETRAIN_LOG_PATH
+RETRAIN_STATE_PATH = paths.RETRAIN_STATE_PATH
+MEASUREMENTS_DIR = paths.MEASUREMENTS_DIR
+
+# The API appends to the metering buffer and the retrain log, so the artifact
+# root has to exist before the first request does.
+paths.RESULTS_ROOT.mkdir(parents=True, exist_ok=True)
 
 # ── Capacity & dust lookups ──────────────────────────────────────────────────
 
-CAPACITY_LOOKUP: dict[str, float] = {
-    **{item.name: item.installed_capacity_mwc for item in GOVERNORATES},
-    **DISTRICT_CAPACITY_LOOKUP,
-}
-DUST_LOOKUP: dict[str, float] = {
-    **{item.name: item.dust_loss_pct for item in GOVERNORATES},
-    **DISTRICT_DUST_LOOKUP,
-}
+# Governorate-level and district-level lookups were merged into one mapping in
+# ``data.steg_districts``; the aliases below keep the historical API names.
+CAPACITY_LOOKUP: dict[str, float] = DISTRICT_CAPACITY_LOOKUP
+DUST_LOOKUP: dict[str, float] = DISTRICT_DUST_LOOKUP
 
 # ── Authentication ───────────────────────────────────────────────────────────
 

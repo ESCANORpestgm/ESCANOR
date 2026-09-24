@@ -11,8 +11,15 @@ Contains all 50 commercial districts across the 7 Directions de Distribution wit
 - Fuel and energy displacement conversion factors
 """
 
+if __package__ in (None, ""):  # launched as `python <dir>/<file>.py`: add the project root
+    import pathlib
+    import sys
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
 from dataclasses import dataclass
 from typing import List, Dict
+
+from data.climate import DEFAULT_PV_ORIENTATION  # re-exported for legacy importers
 
 # Official National Aggregates (Mars 2026)
 NATIONAL_ROOFTOP_PV_MWC = 456.0
@@ -31,16 +38,6 @@ DISPLACEMENT_FACTORS = {
     "co2_avoided_tonnes_per_mwh": 0.5725,   # Tonnes of CO2 emissions avoided per MWh PV
     "grid_injection_share": 0.6407,         # Share of generation exported into STEG MV/LV grid
     "self_consumption_share": 0.3593,       # Share self-consumed behind the meter
-}
-
-# Standard Rooftop PV Geometric Displacements in Tunisia
-DEFAULT_PV_ORIENTATION = {
-    "tilt_degrees": 20.0,
-    "tilt_range": (15.0, 30.0),
-    "azimuth_degrees": 180.0,
-    "azimuth_dispersion_std": 22.5,
-    "temp_coefficient_pct_per_c": -0.38,
-    "inverter_dc_ac_ratio": 1.15,
 }
 
 # Saturation thresholds per high-penetration district (MW)

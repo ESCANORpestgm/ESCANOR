@@ -9,13 +9,25 @@ Usage:
 
 from __future__ import annotations
 
+if __package__ in (None, ""):  # launched as `python <dir>/<file>.py`: add the project root
+    import pathlib
+    import sys
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
 import argparse
 import json
 from pathlib import Path
 from typing import Any
 
+from data.io import write_json_atomic
+from data.prosol_report_schema import REPORT_PERIOD_COLUMNS, SNAPSHOT_SCOPE
 
-def load(path: Path) -> dict[str, Any]:
+# Only the value columns are compared: the variance columns of a snapshot are
+# derived from them, so comparing those too would report one change twice
+COMPARED_VALUE_KEYS = REPORT_PERIOD_COLUMNS
+
+
+def load_snapshot(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -32,13 +44,7 @@ def compare(left: dict[str, Any], right: dict[str, Any]) -> dict[str, Any]:
             continue
         changed = {
             key: {"before": before[key], "after": after[key]}
-            for key in (
-                "current_month",
-                "previous_year_month",
-                "current_year_to_date",
-                "previous_year_to_date",
-                "since_program_start",
-            )
+            for key in COMPARED_VALUE_KEYS
             if before.get(key) != after.get(key)
         }
         if changed:
@@ -47,7 +53,7 @@ def compare(left: dict[str, Any], right: dict[str, Any]) -> dict[str, Any]:
     left_districts = {row["name"] for row in left["districts"]}
     right_districts = {row["name"] for row in right["districts"]}
     return {
-        "scope": "rooftop_pv",
+        "scope": SNAPSHOT_SCOPE,
         "left_source": left["source_file"],
         "right_source": right["source_file"],
         "same_report_period": left["report_period"] == right["report_period"],
@@ -68,9 +74,8 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
-    result = compare(load(args.left), load(args.right))
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    result = compare(load_snapshot(args.left), load_snapshot(args.right))
+    write_json_atomic(args.output, result)
     print(f"Compared {args.left.name} with {args.right.name} -> {args.output}")
     print(f"National metric differences: {len(result['national_metric_differences'])}")
     print(f"Districts added: {len(result['districts_added'])}")

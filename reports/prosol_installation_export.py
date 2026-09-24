@@ -8,6 +8,18 @@ from typing import Any
 
 from data.steg_districts import DISTRICT_BY_NAME
 
+SNAPSHOT_SOURCE_LABEL = "official_prosol_snapshot"
+# Stable export column order. ``live_new_installations`` and
+# ``current_new_installations_ytd`` are not produced here: the reports API
+# injects them from the validated installation-update log before rendering.
+EXPORT_FIELDS = (
+    "report_period", "emission_date", "district", "direction",
+    "new_installations_month", "new_installations_ytd",
+    "live_new_installations", "current_new_installations_ytd",
+    "installations_since_program_start", "new_capacity_mw_month",
+    "new_capacity_mw_ytd", "source_file", "source",
+)
+
 
 def new_installations_by_district(report: dict[str, Any]) -> list[dict[str, Any]]:
     """Return monthly and YTD new installations for every district in a snapshot.
@@ -31,22 +43,15 @@ def new_installations_by_district(report: dict[str, Any]) -> list[dict[str, Any]
             "new_capacity_mw_month": installed_power.get("current_month"),
             "new_capacity_mw_ytd": installed_power.get("current_year_to_date"),
             "source_file": report.get("source_file"),
-            "source": "official_prosol_snapshot",
+            "source": SNAPSHOT_SOURCE_LABEL,
         })
     return rows
 
 
 def rows_to_csv(rows: list[dict[str, Any]]) -> str:
     """Serialize installation rows with a stable CSV column order."""
-    fields = [
-        "report_period", "emission_date", "district", "direction",
-        "new_installations_month", "new_installations_ytd",
-        "live_new_installations", "current_new_installations_ytd",
-        "installations_since_program_start", "new_capacity_mw_month",
-        "new_capacity_mw_ytd", "source_file", "source",
-    ]
     output = io.StringIO(newline="")
-    writer = csv.DictWriter(output, fieldnames=fields)
+    writer = csv.DictWriter(output, fieldnames=EXPORT_FIELDS)
     writer.writeheader()
     writer.writerows(rows)
     return output.getvalue()

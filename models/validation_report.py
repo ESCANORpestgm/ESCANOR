@@ -1,34 +1,54 @@
-"""Build train-versus-validation metrics for the deployed PVGIS model."""
+"""Build train-versus-validation metrics for the deployed PVGIS model.
+
+Scores the deployed quantile ensemble on the 80/20 temporal split of the PVGIS
+district dataset and persists the result as ``model_validation_metrics.json``.
+
+Run:
+    python -m models.validation_report
+"""
 
 from __future__ import annotations
 
+if __package__ in (None, ""):  # launched as `python <dir>/<file>.py`: add the project root
+    import pathlib
+    import sys
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
 import json
-from pathlib import Path
 from typing import Any, cast
 
 import numpy as np
 import pandas as pd
 
+from data.io import write_json_atomic
+from data.paths import (
+    CALIBRATION_PATH,
+    MODEL_PATH,
+    ROOFTOP_TRAINING_DATASET_PATH,
+    VALIDATION_METRICS_PATH,
+    relative_to_project,
+)
 from data.steg_districts import DISTRICT_CAPACITY_LOOKUP, DISTRICT_DUST_LOOKUP
-from models.history import _to_model_schema
-from models.ml_forecast import load_models, predict, load_calibration
+from models.artifacts import load_models
+from models.calibration import load_calibration
+from models.inference import (
+    FORECAST_P10_COLUMN,
+    FORECAST_P50_COLUMN,
+    FORECAST_P90_COLUMN,
+    predict,
+)
+from models.pvgis_dataset import load_hourly_dataset
 
-ROOT = Path(__file__).resolve().parents[1]
-DATASET_PATH = ROOT / "results" / "datasets" / "rooftop_actual_15min.csv"
-MODEL_PATH = ROOT / "models" / "artifacts" / "quantile_models.joblib"
-CALIBRATION_PATH = ROOT / "results" / "calibration.json"
-REPORT_PATH = ROOT / "results" / "model_validation_metrics.json"
+# Quantiles scored by the pinball loss, and the column each one maps to
+REPORT_QUANTILES = (0.1, 0.5, 0.9)
+# Temporal split: the last 20% of the dataset is held out for validation
+VALIDATION_FRACTION = 0.8
+# Production above this threshold counts as daylight when scoring
+MIN_DAYLIGHT_PRODUCTION_MW = 0.01
 
 
-def _hourly_dataset() -> pd.DataFrame:
-    raw = pd.read_csv(DATASET_PATH)
-    raw["timestamp_utc"] = pd.to_datetime(raw["timestamp_utc"], utc=True).dt.floor("h").astype(str)
-    numeric = [
-        "power_kw", "ghi_wm2", "dni_wm2", "dhi_wm2", "temp_c",
-        "cloud_cover_pct", "wind_speed_ms", "energy_kwh",
-    ]
-    hourly = raw.groupby(["timestamp_utc", "district", "direction"], as_index=False)[numeric].mean()
-    return _to_model_schema(cast(pd.DataFrame, hourly))
+def _column_for(quantile: float) -> str:
+    return {0.1: FORECAST_P10_COLUMN, 0.5: FORECAST_P50_COLUMN, 0.9: FORECAST_P90_COLUMN}[quantile]
 
 
 def _split_metrics(models: dict[str, Any], frame: pd.DataFrame,
@@ -38,19 +58,19 @@ def _split_metrics(models: dict[str, Any], frame: pd.DataFrame,
                           conformal_q=conformal_q, horizon_scales=horizon_scales)
     actual = predictions["production_mw"].to_numpy(dtype=float)
     quantile_losses = []
-    for quantile in (0.1, 0.5, 0.9):
-        forecast = predictions[f"forecast_p{int(quantile * 100)}_mw"].to_numpy(dtype=float)
+    for quantile in REPORT_QUANTILES:
+        forecast = predictions[_column_for(quantile)].to_numpy(dtype=float)
         error = actual - forecast
         quantile_losses.append(np.maximum(quantile * error, (quantile - 1) * error).mean())
-    p50_error = predictions["forecast_p50_mw"] - predictions["production_mw"]
-    daylight = predictions["production_mw"] > 0.01
+    p50_error = predictions[FORECAST_P50_COLUMN] - predictions["production_mw"]
+    daylight = predictions["production_mw"] > MIN_DAYLIGHT_PRODUCTION_MW
     mae = float(p50_error[daylight].abs().mean()) if daylight.any() else 0.0
     rmse = float(np.sqrt((p50_error[daylight] ** 2).mean())) if daylight.any() else 0.0
     capacity_mw = sum(DISTRICT_CAPACITY_LOOKUP.values())
     nrmse = 100 * rmse / capacity_mw if capacity_mw else 0.0
     coverage = (
-        (predictions["production_mw"] >= predictions["forecast_p10_mw"])
-        & (predictions["production_mw"] <= predictions["forecast_p90_mw"])
+        (predictions["production_mw"] >= predictions[FORECAST_P10_COLUMN])
+        & (predictions["production_mw"] <= predictions[FORECAST_P90_COLUMN])
     ).mean() * 100
     return {
         "pinball_loss": round(float(np.mean(quantile_losses)), 4),
@@ -64,29 +84,31 @@ def _split_metrics(models: dict[str, Any], frame: pd.DataFrame,
 
 
 def build_validation_report() -> dict[str, Any]:
-    frame = _hourly_dataset()
-    split = frame["timestamp"].quantile(0.8)
+    # Weather-only frame: no ``horizon_hours`` column, so the feature builder
+    # derives it from the timestamp — exactly how the deployed report was scored.
+    frame = load_hourly_dataset(include_descriptive_columns=False)
+    split = frame["timestamp"].quantile(VALIDATION_FRACTION)
     train = cast(pd.DataFrame, frame[frame["timestamp"] < split])
     validation = cast(pd.DataFrame, frame[frame["timestamp"] >= split])
-    models = load_models(str(MODEL_PATH))
-    calibration = load_calibration(str(CALIBRATION_PATH))
+    models = load_models(MODEL_PATH)
+    calibration = load_calibration(CALIBRATION_PATH)
     conformal_q = calibration.get("conformal_q", 0.0)
     horizon_scales = calibration.get("horizon_scales")
-    report = {
+    return {
         "source": "pvgis_district_model",
-        "dataset_path": str(DATASET_PATH.relative_to(ROOT)),
-        "model_path": str(MODEL_PATH.relative_to(ROOT)),
+        "dataset_path": relative_to_project(ROOFTOP_TRAINING_DATASET_PATH),
+        "model_path": relative_to_project(MODEL_PATH),
         "split_timestamp": str(split),
         "conformal_q": round(conformal_q, 4),
         "training": _split_metrics(models, train, conformal_q, horizon_scales),
         "validation": _split_metrics(models, validation, conformal_q, horizon_scales),
     }
-    return report
 
 
 def write_validation_report() -> dict[str, Any]:
+    """Build the report and persist it atomically to the registry location."""
     report = build_validation_report()
-    REPORT_PATH.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    write_json_atomic(VALIDATION_METRICS_PATH, report)
     return report
 
 

@@ -14,8 +14,54 @@ from typing import cast
 import pandas as pd
 import requests
 
-PVGIS_URL = "https://re.jrc.ec.europa.eu/api/v5_2/seriescalc"
-DEFAULT_LOSS_PCT = 14.0
+from data.climate import SYSTEM_LOSS_PCT
+from ingestion.settings import (
+    CLOUD_COVER_PCT,
+    DHI_WM2,
+    DNI_WM2,
+    GHI_WM2,
+    PVGIS_HISTORICAL_TIMEOUT_SECONDS,
+    PVGIS_HOURLY_URL,
+    PVGIS_TIMEOUT_SECONDS,
+    TEMP_C,
+    TIMESTAMP_UTC,
+    WIND_SPEED_MS,
+)
+
+# Columns of the district-level frame produced below.
+POWER_KW = "power_kw"
+PV_COMPONENT_COLUMNS = (POWER_KW, GHI_WM2, DNI_WM2, DHI_WM2, TEMP_C, WIND_SPEED_MS)
+
+
+def fetch_historical_pv_profile(
+    latitude: float,
+    longitude: float,
+    start_year: int,
+    end_year: int,
+    *,
+    peak_power_kwc: float = 1.0,
+    system_loss_pct: float = SYSTEM_LOSS_PCT,
+) -> dict:
+    """Raw hourly PV simulation payload for a reference system at a site.
+
+    Useful as ground truth for training/validation before real STEG metering
+    data is available. Callers normally want :func:`fetch_district_hourly`,
+    which parses this payload into a DataFrame.
+    """
+    params = {
+        "lat": latitude,
+        "lon": longitude,
+        "startyear": start_year,
+        "endyear": end_year,
+        "pvcalculation": 1,
+        "peakpower": peak_power_kwc,
+        "loss": system_loss_pct,
+        "outputformat": "json",
+        "mountingplace": "building",
+    }
+    response = requests.get(PVGIS_HOURLY_URL, params=params, timeout=PVGIS_HISTORICAL_TIMEOUT_SECONDS)
+    response.raise_for_status()
+    return response.json()
 
 
 def _numeric_column(hourly: pd.DataFrame, name: str) -> pd.Series:
@@ -34,7 +80,7 @@ def fetch_district_hourly(
     azimuth: float,
     peak_power_kwp: float,
     cache_path: Path,
-    timeout_seconds: int = 120,
+    timeout_seconds: int = PVGIS_TIMEOUT_SECONDS,
 ) -> pd.DataFrame:
     """Fetch or load hourly PVGIS production for one aggregate district fleet."""
     cache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -54,10 +100,10 @@ def fetch_district_hourly(
             "pvcalculation": 1,
             "components": 1,
             "peakpower": peak_power_kwp,
-            "loss": DEFAULT_LOSS_PCT,
+            "loss": SYSTEM_LOSS_PCT,
             "localtime": 0,
         }
-        response = requests.get(PVGIS_URL, params=params, timeout=timeout_seconds)
+        response = requests.get(PVGIS_HOURLY_URL, params=params, timeout=timeout_seconds)
         if not response.ok:
             raise requests.HTTPError(
                 f"PVGIS request failed ({response.status_code}): {response.text[:500]}",
@@ -79,17 +125,18 @@ def fetch_district_hourly(
     reflected = _numeric_column(hourly, "Gr(i)")
     frame = pd.DataFrame(
         {
-            "timestamp_utc": timestamp,
-            "power_kw": pd.to_numeric(hourly["P"], errors="coerce"),
-            "ghi_wm2": beam + diffuse + reflected,
-            "dni_wm2": beam,
-            "dhi_wm2": diffuse,
-            "temp_c": _numeric_column(hourly, "T2m"),
-            "wind_speed_ms": _numeric_column(hourly, "WS10m"),
+            TIMESTAMP_UTC: timestamp,
+            POWER_KW: pd.to_numeric(hourly["P"], errors="coerce"),
+            GHI_WM2: beam + diffuse + reflected,
+            DNI_WM2: beam,
+            DHI_WM2: diffuse,
+            TEMP_C: _numeric_column(hourly, "T2m"),
+            WIND_SPEED_MS: _numeric_column(hourly, "WS10m"),
         }
     )
-    frame["cloud_cover_pct"] = 0.0
-    for column in ["power_kw", "ghi_wm2", "dni_wm2", "dhi_wm2", "temp_c", "wind_speed_ms"]:
+    frame[CLOUD_COVER_PCT] = 0.0
+    for column in PV_COMPONENT_COLUMNS:
         frame[column] = frame[column].fillna(0.0)
-    frame["power_kw"] = frame["power_kw"].clip(lower=0.0, upper=peak_power_kwp)
-    return frame.sort_values("timestamp_utc").drop_duplicates("timestamp_utc").reset_index(drop=True)
+    frame[POWER_KW] = frame[POWER_KW].clip(lower=0.0, upper=peak_power_kwp)
+    return frame.sort_values(TIMESTAMP_UTC).drop_duplicates(TIMESTAMP_UTC).reset_index(drop=True)
+

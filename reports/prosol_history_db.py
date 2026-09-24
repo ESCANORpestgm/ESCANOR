@@ -9,9 +9,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_DB_PATH = ROOT / "results" / "prosol_history.db"
-DEFAULT_SNAPSHOT_DIR = ROOT / "reports" / "generated"
+from data.paths import PROSOL_HISTORY_DB_PATH, PROSOL_SNAPSHOT_DIR
+from data.prosol_report_schema import SNAPSHOT_SCOPE
+
+# Kept for call-site compatibility; the canonical locations live in data.paths
+DEFAULT_DB_PATH = PROSOL_HISTORY_DB_PATH
+DEFAULT_SNAPSHOT_DIR = PROSOL_SNAPSHOT_DIR
+
+# Content-addressed identity of a snapshot: prefix + leading hex of its SHA-256
+SNAPSHOT_ID_PREFIX = "prosol_"
+SNAPSHOT_ID_LENGTH = 16
+SNAPSHOT_GLOB = "prosol_*.json"
+# Comparison files are derived from snapshots and must not be imported as such
+COMPARISON_SUFFIX = "_comparison.json"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS prosol_reports (
@@ -93,10 +103,12 @@ def _number(value: Any) -> float | None:
 
 def _snapshot_id(payload: dict[str, Any]) -> str:
     canonical = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
-    return "prosol_" + hashlib.sha256(canonical).hexdigest()[:16]
+    return SNAPSHOT_ID_PREFIX + hashlib.sha256(canonical).hexdigest()[:SNAPSHOT_ID_LENGTH]
 
 
 def import_snapshot(snapshot_path: Path, db_path: Path = DEFAULT_DB_PATH) -> tuple[str, bool]:
+    # Strict on purpose: a snapshot is content-addressed, so an unreadable file
+    # must abort the import instead of silently receiving a bogus identifier.
     payload = json.loads(snapshot_path.read_text(encoding="utf-8"))
     snapshot_id = _snapshot_id(payload)
     initialize(db_path)
@@ -120,7 +132,7 @@ def import_snapshot(snapshot_path: Path, db_path: Path = DEFAULT_DB_PATH) -> tup
                 payload.get("emission_date"),
                 payload.get("source_file", snapshot_path.name),
                 datetime.now(timezone.utc).isoformat(),
-                payload.get("scope", "rooftop_pv"),
+                payload.get("scope", SNAPSHOT_SCOPE),
                 int(bool(reconciliation.get("passed", False))),
                 json.dumps(payload, ensure_ascii=False),
             ),
@@ -160,8 +172,8 @@ def import_generated_snapshots(
 ) -> list[dict[str, Any]]:
     initialize(db_path)
     results = []
-    for snapshot_path in sorted(snapshot_dir.glob("prosol_*.json")):
-        if snapshot_path.name.endswith("_comparison.json"):
+    for snapshot_path in sorted(snapshot_dir.glob(SNAPSHOT_GLOB)):
+        if snapshot_path.name.endswith(COMPARISON_SUFFIX):
             continue
         snapshot_id, inserted = import_snapshot(snapshot_path, db_path)
         results.append({"snapshot_id": snapshot_id, "source": snapshot_path.name, "inserted": inserted})

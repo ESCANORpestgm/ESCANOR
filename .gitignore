@@ -6,20 +6,20 @@ venv/
 
 # Local environment and operational state
 .env
-results/presol.db
-results/prosol_history.db
-results/model_registry/artifacts/
-results/forecast_evaluations/
-results/*.db-wal
-results/*.db-shm
-results/metering_buffer.csv
-results/retrain_log.csv
+results/prosol/presol.db
+results/prosol/prosol_history.db
+results/**/*.db-wal
+results/**/*.db-shm
+results/model_artifacts/model_registry/artifacts/
+results/evaluations/
+results/measurements/metering_buffer.csv
+results/history/retrain_log.csv
 
 # Generated reports and cache
 reports/generated/
 results/datasets/pvgis_cache/
-results/metrics_by_horizon.csv
-results/model_validation_metrics.json
+results/history/metrics_by_horizon.csv
+results/model_artifacts/model_validation_metrics.json
 
 # Editor / OS
 .vscode/

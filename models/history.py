@@ -6,47 +6,66 @@ Generates three output files:
   - training_progression.csv — per-training-run metrics showing model learning
 
 Run:
-    python models/history.py --days 30
+    python -m models.history --days 30
 """
 
 from __future__ import annotations
 
+if __package__ in (None, ""):  # launched as `python <dir>/<file>.py`: add the project root
+    import pathlib
+    import sys
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
 import argparse
-import json
-import os
-import sys
 from pathlib import Path
 from typing import cast
 
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from data.io import read_json, write_dataframe
+from data.paths import (
+    CALIBRATION_PATH,
+    DAILY_HISTORY_PATH,
+    MODEL_PATH,
+    NATIONAL_HISTORY_PATH,
+    REGISTRY_DIR,
+    RETRAIN_LOG_PATH,
+    ROOFTOP_TRAINING_DATASET_PATH,
+    TRAINING_PROGRESSION_PATH,
+    VALIDATION_METRICS_PATH,
+    relative_to_project,
+)
 from data.steg_districts import DISTRICT_CAPACITY_LOOKUP, DISTRICT_DUST_LOOKUP
-from models.ml_forecast import load_models, predict, load_calibration
-
-ROOT = Path(__file__).resolve().parents[1]
-MODEL_PATH = ROOT / "models" / "artifacts" / "quantile_models.joblib"
-DATASET_PATH = ROOT / "results" / "datasets" / "rooftop_actual_15min.csv"
-CALIBRATION_PATH = ROOT / "results" / "calibration.json"
-HISTORY_PATH = ROOT / "results" / "history_national.csv"
-DAILY_PATH = ROOT / "results" / "history_daily.csv"
-PROGRESSION_PATH = ROOT / "results" / "training_progression.csv"
-TRAINING_RUNS_PATH = ROOT / "results" / "model_registry" / "training_runs.json"
-RETRAIN_LOG_PATH = ROOT / "results" / "retrain_log.csv"
-VALIDATION_PATH = ROOT / "results" / "model_validation_metrics.json"
+from models.artifacts import load_models
+from models.calibration import load_calibration
+from models.inference import (
+    FORECAST_P10_COLUMN,
+    FORECAST_P50_COLUMN,
+    FORECAST_P90_COLUMN,
+    predict,
+)
+from models.pvgis_dataset import resample_hourly, to_model_schema
 
 # GHI threshold below which forecasts are zeroed (nighttime / overcast-dark)
 GHI_NIGHT_THRESHOLD = 1.0  # W/m²
+# Hourly national rows counted as daylight when evaluating accuracy
+DAYLIGHT_MIN_ACTUAL_MW = 0.1
+TRAINING_RUNS_PATH = REGISTRY_DIR / "training_runs.json"
 
 
-def _to_model_schema(dataset: pd.DataFrame) -> pd.DataFrame:
-    frame = cast(pd.DataFrame, dataset.copy())
-    frame["timestamp"] = pd.to_datetime(frame["timestamp_utc"], utc=True).dt.tz_localize(None)
-    frame["governorate"] = frame["district"]
-    frame["steg_district"] = frame["district"]
-    frame["production_mw"] = frame["power_kw"] / 1000.0
-    return frame
+def _select_window(dataset_path: Path, start: str, days: int) -> pd.DataFrame:
+    """15-minute rows of ``[start, start + days)`` — the evaluation window."""
+    if not dataset_path.is_file():
+        raise FileNotFoundError(f"PVGIS dataset not found: {dataset_path}")
+    raw = pd.read_csv(dataset_path)
+    timestamps = pd.to_datetime(raw["timestamp_utc"], utc=True)
+    window_start = pd.Timestamp(start, tz="UTC")
+    window_end = window_start + pd.Timedelta(days=days)
+    selected = raw.loc[(timestamps >= window_start) & (timestamps < window_end)].copy()
+    if selected.empty:
+        raise ValueError(f"No PVGIS rows found between {start} and {window_end.date()}")
+    return selected
 
 
 def build_national_history(
@@ -59,26 +78,10 @@ def build_national_history(
     Returns (hourly_national, daily_summary) DataFrames.
     """
     del seed  # Retained for CLI compatibility; PVGIS data is deterministic.
-    if not DATASET_PATH.is_file():
-        raise FileNotFoundError(f"PVGIS dataset not found: {DATASET_PATH}")
-    dataset = pd.read_csv(DATASET_PATH)
-    timestamps = pd.to_datetime(dataset["timestamp_utc"], utc=True)
-    end = pd.Timestamp(start, tz="UTC") + pd.Timedelta(days=days)
-    selected = dataset.loc[(timestamps >= pd.Timestamp(start, tz="UTC")) & (timestamps < end)].copy()
-    if selected.empty:
-        raise ValueError(f"No PVGIS rows found between {start} and {end.date()}")
-    # Aggregate 15-min → hourly per district/direction
-    selected["timestamp_utc"] = pd.to_datetime(selected["timestamp_utc"], utc=True).dt.floor("h").astype(str)
-    numeric_columns = ["power_kw", "ghi_wm2", "dni_wm2", "dhi_wm2", "temp_c", "cloud_cover_pct", "wind_speed_ms", "energy_kwh"]
-    hourly = selected.groupby(["timestamp_utc", "district", "direction"], as_index=False)[numeric_columns].mean()
-    for column in ["location_id", "pv_count", "system_size_kwc", "installed_capacity_kwp", "tilt_deg", "azimuth_deg", "horizon_hours", "quality_status", "source", "dataset_version"]:
-        if column in selected.columns:
-            hourly[column] = selected.groupby(["timestamp_utc", "district", "direction"], as_index=False)[column].first()[column]
-    dataset = hourly
-
-    model_frame = _to_model_schema(dataset)
-    models = load_models(str(MODEL_PATH))
-    calibration = load_calibration(str(CALIBRATION_PATH))
+    dataset = resample_hourly(_select_window(ROOFTOP_TRAINING_DATASET_PATH, start, days))
+    model_frame = to_model_schema(dataset)
+    models = load_models(MODEL_PATH)
+    calibration = load_calibration(CALIBRATION_PATH)
     predictions = cast(pd.DataFrame, predict(
         models, model_frame, DISTRICT_CAPACITY_LOOKUP, DISTRICT_DUST_LOOKUP,
         conformal_q=calibration.get("conformal_q", 0.0),
@@ -87,36 +90,35 @@ def build_national_history(
 
     # ── Nighttime zeroing: when GHI ≈ 0, no solar production is possible ────
     night_mask = predictions["ghi_wm2"] < GHI_NIGHT_THRESHOLD
-    predictions.loc[night_mask, "forecast_p50_mw"] = 0.0
-    predictions.loc[night_mask, "forecast_p10_mw"] = 0.0
-    predictions.loc[night_mask, "forecast_p90_mw"] = 0.0
+    predictions.loc[night_mask, [FORECAST_P50_COLUMN, FORECAST_P10_COLUMN, FORECAST_P90_COLUMN]] = 0.0
 
     national = cast(pd.DataFrame, predictions.groupby("timestamp", as_index=False).agg(
         actual_mw=("production_mw", "sum"),
-        forecast_p50_mw=("forecast_p50_mw", "sum"),
-        forecast_p10_mw=("forecast_p10_mw", "sum"),
-        forecast_p90_mw=("forecast_p90_mw", "sum"),
+        **{
+            column: (column, "sum")
+            for column in (FORECAST_P50_COLUMN, FORECAST_P10_COLUMN, FORECAST_P90_COLUMN)
+        },
     ))
-    national["error_mw"] = national["forecast_p50_mw"] - national["actual_mw"]
+    national["error_mw"] = national[FORECAST_P50_COLUMN] - national["actual_mw"]
     actual = cast(pd.Series, national["actual_mw"])
     national["error_pct"] = (100 * national["error_mw"] / actual.replace(0, np.nan)).fillna(0)
     national["source"] = str(dataset["source"].iloc[0]) if "source" in dataset.columns else "pvgis_district_model"
-    national["dataset_path"] = str(DATASET_PATH.relative_to(ROOT))
+    national["dataset_path"] = relative_to_project(ROOFTOP_TRAINING_DATASET_PATH)
 
     # ── Daily rolling metrics ────────────────────────────────────────────────
     national["date"] = pd.to_datetime(national["timestamp"]).dt.date
-    daylight = national[national["actual_mw"] > 0.1].copy()
+    daylight = national[national["actual_mw"] > DAYLIGHT_MIN_ACTUAL_MW].copy()
     daylight["abs_error"] = daylight["error_mw"].abs()
     daylight["sq_error"] = daylight["error_mw"] ** 2
     daylight["in_band"] = (
-        (daylight["actual_mw"] >= daylight["forecast_p10_mw"]) &
-        (daylight["actual_mw"] <= daylight["forecast_p90_mw"])
+        (daylight["actual_mw"] >= daylight[FORECAST_P10_COLUMN]) &
+        (daylight["actual_mw"] <= daylight[FORECAST_P90_COLUMN])
     ).astype(int)
 
     daily = daylight.groupby("date", as_index=False).agg(
         hours=("actual_mw", "count"),
         total_actual_mwh=("actual_mw", "sum"),
-        total_forecast_mwh=("forecast_p50_mw", "sum"),
+        total_forecast_mwh=(FORECAST_P50_COLUMN, "sum"),
         mae_mw=("abs_error", "mean"),
         rmse_mw=("sq_error", lambda x: np.sqrt(x.mean())),
         coverage_pct=("in_band", "mean"),
@@ -144,7 +146,7 @@ def build_training_progression() -> pd.DataFrame:
 
     # 1) Training runs from registry
     if TRAINING_RUNS_PATH.exists():
-        runs = json.loads(TRAINING_RUNS_PATH.read_text(encoding="utf-8"))
+        runs = read_json(TRAINING_RUNS_PATH, default=[]) or []
         for run in runs:
             metrics = run.get("metrics", {})
             rows.append({
@@ -185,9 +187,9 @@ def build_training_progression() -> pd.DataFrame:
             pass
 
     # 3) Add current validation metrics as a final "evaluation" row
-    if VALIDATION_PATH.exists():
+    if VALIDATION_METRICS_PATH.exists():
         try:
-            val = json.loads(VALIDATION_PATH.read_text(encoding="utf-8"))
+            val = read_json(VALIDATION_METRICS_PATH, default={}) or {}
             train = val.get("training", {})
             valid = val.get("validation", {})
             if rows:
@@ -213,27 +215,26 @@ def main() -> None:
 
     # ── Hourly + daily history ─────────────────────────────────────────────
     history, daily = build_national_history(days=args.days, start=args.start, seed=args.seed)
-    HISTORY_PATH.parent.mkdir(parents=True, exist_ok=True)
-    history.drop(columns=["date"], errors="ignore").to_csv(HISTORY_PATH, index=False)
-    daily.to_csv(DAILY_PATH, index=False)
-    print(f"Saved {len(history)} hourly national rows → {HISTORY_PATH}")
-    print(f"Saved {len(daily)} daily summary rows   → {DAILY_PATH}")
+    write_dataframe(history.drop(columns=["date"], errors="ignore"), NATIONAL_HISTORY_PATH)
+    write_dataframe(daily, DAILY_HISTORY_PATH)
+    print(f"Saved {len(history)} hourly national rows → {NATIONAL_HISTORY_PATH}")
+    print(f"Saved {len(daily)} daily summary rows   → {DAILY_HISTORY_PATH}")
 
     # Daylight-only stats
-    daylight = history[history["actual_mw"] > 0.1]
+    daylight = history[history["actual_mw"] > DAYLIGHT_MIN_ACTUAL_MW]
     if not daylight.empty:
         mae = daylight["error_mw"].abs().mean()
-        coverage = ((daylight["actual_mw"] >= daylight["forecast_p10_mw"]) &
-                    (daylight["actual_mw"] <= daylight["forecast_p90_mw"])).mean() * 100
+        coverage = ((daylight["actual_mw"] >= daylight[FORECAST_P10_COLUMN]) &
+                    (daylight["actual_mw"] <= daylight[FORECAST_P90_COLUMN])).mean() * 100
         print(f"Daylight MAE: {mae:.2f} MW · Coverage: {coverage:.1f}%")
-    night = history[history["actual_mw"] <= 0.1]
+    night = history[history["actual_mw"] <= DAYLIGHT_MIN_ACTUAL_MW]
     if not night.empty:
-        print(f"Nighttime rows: {len(night)} (forecast zeroed, max fc={night['forecast_p50_mw'].max():.1f} MW)")
+        print(f"Nighttime rows: {len(night)} (forecast zeroed, max fc={night[FORECAST_P50_COLUMN].max():.1f} MW)")
 
     # ── Training progression ───────────────────────────────────────────────
     progression = build_training_progression()
-    progression.to_csv(PROGRESSION_PATH, index=False)
-    print(f"Saved {len(progression)} training runs   → {PROGRESSION_PATH}")
+    write_dataframe(progression, TRAINING_PROGRESSION_PATH)
+    print(f"Saved {len(progression)} training runs   → {TRAINING_PROGRESSION_PATH}")
     if not progression.empty:
         for _, row in progression.iterrows():
             promoted_tag = " ✅ PROMOTED" if row.get("promoted") else ""

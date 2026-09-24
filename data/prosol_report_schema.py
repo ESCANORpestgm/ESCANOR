@@ -111,6 +111,8 @@ REPORT_SECTIONS = (
 )
 
 REPORT_LEVELS = ("national", "direction", "commercial_district")
+# Value columns carried by every comparison row, in report order. The variance
+# columns are derived from them and are therefore not compared on their own.
 REPORT_PERIOD_COLUMNS = (
     "current_month",
     "previous_year_month",
@@ -118,3 +120,6 @@ REPORT_PERIOD_COLUMNS = (
     "previous_year_to_date",
     "since_program_start",
 )
+# Every Prosol snapshot describes rooftop PV only; section 6 (CES water
+# heaters) is excluded on import, so scope is a constant, not a field to infer.
+SNAPSHOT_SCOPE = "rooftop_pv"

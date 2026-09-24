@@ -14,14 +14,39 @@ Sources:
 - PVGIS (JRC): free, no API key, historical hourly irradiance.
 """
 
+if __package__ in (None, ""):  # launched as `python <dir>/<file>.py`: add the project root
+    import pathlib
+    import sys
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
 import asyncio
 from datetime import date, timedelta
 
 import httpx
 import pandas as pd
 
-OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
-PVGIS_HOURLY_URL = "https://re.jrc.ec.europa.eu/api/v5_2/seriescalc"
+from ingestion.settings import (
+    CLOUD_COVER_PCT,
+    DIRECTION,
+    DISTRICT,
+    DHI_WM2,
+    DNI_WM2,
+    GHI_WM2,
+    GOVERNORATE,
+    LOCAL_TIMEZONE,
+    MAX_FORECAST_DAYS,
+    MISSING_CLOUD_COVER_PCT,
+    MISSING_GHI_WM2,
+    MISSING_TEMP_C,
+    MISSING_WIND_SPEED_MS,
+    OPEN_METEO_URL,
+    STEG_DISTRICT,
+    TEMP_C,
+    TIMESTAMP,
+    WEATHER_SINGLE_FETCH_TIMEOUT_SECONDS,
+    WEATHER_TIMEOUT_SECONDS,
+    WIND_SPEED_MS,
+)
 
 # Extended variable set — DNI, DHI, and wind speed are now included so the
 # ML feature engineering step can use them.
@@ -35,17 +60,21 @@ HOURLY_VARS = [
 ]
 
 
-async def _fetch_one_async(client: httpx.AsyncClient, lat: float, lon: float,
-                           days_ahead: int) -> dict:
-    """Single async GET to Open-Meteo for one location."""
-    params = {
+def _forecast_params(lat: float, lon: float, days_ahead: int) -> dict:
+    """Shared Open-Meteo query parameters for the async and sync fetchers."""
+    return {
         "latitude": lat,
         "longitude": lon,
         "hourly": ",".join(HOURLY_VARS),
-        "forecast_days": min(days_ahead + 1, 16),
-        "timezone": "Africa/Tunis",
+        "forecast_days": min(days_ahead + 1, MAX_FORECAST_DAYS),
+        "timezone": LOCAL_TIMEZONE,
     }
-    resp = await client.get(OPEN_METEO_URL, params=params)
+
+
+async def _fetch_one_async(client: httpx.AsyncClient, lat: float, lon: float,
+                           days_ahead: int) -> dict:
+    """Single async GET to Open-Meteo for one location."""
+    resp = await client.get(OPEN_METEO_URL, params=_forecast_params(lat, lon, days_ahead))
     resp.raise_for_status()
     return resp.json()
 
@@ -57,7 +86,7 @@ async def fetch_all_governorates_concurrent(governorates, days_ahead: int = 3) -
     Returns {name: forecast_json | {"error": str}}.
     Total wall-clock time ≈ single-request latency (≈1-2 s) regardless of N.
     """
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=WEATHER_TIMEOUT_SECONDS) as client:
         tasks = {
             g.name: _fetch_one_async(client, g.lat, g.lon, days_ahead)
             for g in governorates
@@ -111,20 +140,20 @@ def build_live_weather_dataframe(governorates, days_ahead: int = 3) -> pd.DataFr
 
         for t, gh, dh, dn, tp, cl, ws in zip(times, ghi, dhi, dni, temp, cloud, wind):
             rows.append({
-                "timestamp":       pd.Timestamp(t),
-                "ghi_wm2":         float(gh) if gh is not None else 0.0,
-                "dhi_wm2":         float(dh) if dh is not None else 0.0,
-                "dni_wm2":         float(dn) if dn is not None else 0.0,
-                "wind_speed_ms":   float(ws) if ws is not None else 3.0,
-                "temp_c":          float(tp) if tp is not None else 20.0,
-                "cloud_cover_pct": float(cl) if cl is not None else 30.0,
+                TIMESTAMP:       pd.Timestamp(t),
+                GHI_WM2:         float(gh) if gh is not None else MISSING_GHI_WM2,
+                DHI_WM2:         float(dh) if dh is not None else MISSING_GHI_WM2,
+                DNI_WM2:         float(dn) if dn is not None else MISSING_GHI_WM2,
+                WIND_SPEED_MS:   float(ws) if ws is not None else MISSING_WIND_SPEED_MS,
+                TEMP_C:          float(tp) if tp is not None else MISSING_TEMP_C,
+                CLOUD_COVER_PCT: float(cl) if cl is not None else MISSING_CLOUD_COVER_PCT,
                 # 'governorate' keeps the site name for model feature lookup
-                "governorate":     name,
+                GOVERNORATE:     name,
                 # 'district' = Direction (7 groups) or regional group
-                "district":        direction,
+                DISTRICT:        direction,
                 # New columns for the STEG-district pipeline
-                "steg_district":   name,
-                "direction":       direction,
+                STEG_DISTRICT:   name,
+                DIRECTION:       direction,
             })
 
     return pd.DataFrame(rows)
@@ -135,45 +164,22 @@ def build_live_weather_dataframe(governorates, days_ahead: int = 3) -> pd.DataFr
 def fetch_forecast(lat: float, lon: float, days_ahead: int = 3) -> dict:
     """Synchronous single-location fetch (for scripts / tests)."""
     import requests
-    params = {
-        "latitude": lat, "longitude": lon,
-        "hourly": ",".join(HOURLY_VARS),
-        "forecast_days": min(days_ahead + 1, 16),
-        "timezone": "Africa/Tunis",
-    }
-    resp = requests.get(OPEN_METEO_URL, params=params, timeout=20)
-    resp.raise_for_status()
-    return resp.json()
 
-
-def fetch_pvgis_historical(lat: float, lon: float, start_year: int, end_year: int,
-                            peak_power_kwc: float = 1.0, system_loss_pct: float = 14.0) -> dict:
-    """
-    Hourly PV production simulation from PVGIS for a 1 kWc reference system.
-    Useful as ground truth for training/validation before real STEG metering
-    data is available.
-    """
-    import requests
-    params = {
-        "lat": lat, "lon": lon,
-        "startyear": start_year, "endyear": end_year,
-        "pvcalculation": 1,
-        "peakpower": peak_power_kwc,
-        "loss": system_loss_pct,
-        "outputformat": "json",
-        "mountingplace": "building",
-    }
-    resp = requests.get(PVGIS_HOURLY_URL, params=params, timeout=60)
+    resp = requests.get(
+        OPEN_METEO_URL,
+        params=_forecast_params(lat, lon, days_ahead),
+        timeout=WEATHER_SINGLE_FETCH_TIMEOUT_SECONDS,
+    )
     resp.raise_for_status()
     return resp.json()
 
 
 if __name__ == "__main__":
     # Quick manual test (requires internet access)
-    import sys, os
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
     from data.steg_districts import STEG_DISTRICTS
-    df = build_live_weather_dataframe(STEG_DISTRICTS[:5], days_ahead=1)
-    print(df.head())
-    print(df.dtypes)
-    print(f"\nDistricts fetched: {df['steg_district'].unique()[:5]}")
+
+    frame = build_live_weather_dataframe(STEG_DISTRICTS[:5], days_ahead=1)
+    print(frame.head())
+    print(frame.dtypes)
+    print(f"\nDistricts fetched: {frame[STEG_DISTRICT].unique()[:5]}")

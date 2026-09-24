@@ -13,6 +13,11 @@ Usage:
 
 from __future__ import annotations
 
+if __package__ in (None, ""):  # launched as `python <dir>/<file>.py`: add the project root
+    import pathlib
+    import sys
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
 import argparse
 import csv
 import json
@@ -22,6 +27,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from data.io import write_json_atomic
+from data.paths import relative_to_project
+from data.prosol_report_schema import SNAPSHOT_SCOPE
+
 
 NUMBER = r"-?\d+(?:[.,]\d+)?"
 NUMBER_RE = re.compile(NUMBER)
@@ -29,6 +38,46 @@ MONTHS = {
     "janvier": "01", "février": "02", "mars": "03", "avril": "04",
     "mai": "05", "juin": "06", "juillet": "07", "août": "08",
     "septembre": "09", "octobre": "10", "novembre": "11", "décembre": "12",
+}
+# Fallbacks when the layout of an exported PDF defeats the header regexes
+DEFAULT_MONTH = "01"
+UNKNOWN_PERIOD = "unknown"
+
+# Official national totals printed by the report; the district tables must add
+# up to them for the snapshot to be trusted (see ``EXPECTED`` below).
+EXPECTED: dict[str, dict[str, Any]] = {
+    "installations": {"current_month": 3211, "current_year_to_date": 9340, "since_program_start": 144979},
+    "installed_power_mw": {"current_month": 11.8, "current_year_to_date": 33.8, "since_program_start": 456.0},
+    "pending_dossiers": {"current_year_to_date": 3171, "since_2018": 5475},
+}
+# STEG publishes 50 districts; a shorter table means the parser missed rows
+EXPECTED_DISTRICT_COUNT = 50
+# The source report itself has a documented district-to-national reconciliation
+# gap of up to 0.3 MW; do not hide or reject it.
+POWER_GAP_TOLERANCE_MW = 0.3
+POWER_GAP_DECIMALS = 2
+# Row labels that are layout artefacts rather than data rows
+IGNORED_ROW_LABELS = frozenset({"TOTAL"})
+
+# Section anchors, quoted exactly as pdftotext renders the report headings
+NATIONAL_TABLE_ANCHOR = "Nombre d’installations PV"
+NATIONAL_TABLE_ROWS = 16
+SECTION_DIRECTION_INSTALLATIONS = ("3.3. Nombre d'IPV par Direction", "3.4. Nombre des IPV par District")
+SECTION_DISTRICT_INSTALLATIONS = ("3.4. Nombre des IPV par District", "4. Puissances Installées")
+SECTION_DIRECTION_POWER = ("4.3. Puissances Installées par Direction", "4.4. Puissances Installées par District")
+SECTION_DISTRICT_POWER = ("4.4. Puissances Installées par District", "5. Répartition des IPV")
+SECTION_PENDING = ("7. Nombre de dossiers PV en instance", "Programme Prosol")
+SECTION_SIZES = ("5.1. Nombre d'installation PV", "5.2. Puissances installées")
+
+SNAPSHOT_NATIONAL_UNIT = "reported"
+EXCLUDED_SECTIONS = ["6. Chauffe-Eau-Solaire (CES)"]
+REGISTRY_FILENAME = "report_registry.json"
+CSV_FILENAMES = {
+    "national": "national_metrics.csv",
+    "directions": "direction_metrics.csv",
+    "districts": "district_metrics.csv",
+    "sizes": "installation_sizes.csv",
+    "pending": "pending_dossiers.csv",
 }
 
 
@@ -84,6 +133,11 @@ def section(lines: list[str], start: str, end: str) -> list[str]:
     return lines[start_index + 1 : end_index]
 
 
+def _is_data_row(label: str) -> bool:
+    """False for blank, total or number-led labels produced by table layout."""
+    return bool(label) and label.upper() not in IGNORED_ROW_LABELS and not label[0].isdigit()
+
+
 def parse_comparison_rows(lines: list[str], unit: str) -> list[dict[str, Any]]:
     rows = []
     for line in lines:
@@ -91,7 +145,7 @@ def parse_comparison_rows(lines: list[str], unit: str) -> list[dict[str, Any]]:
         if not parsed:
             continue
         label, values = parsed
-        if not label or label.upper() == "TOTAL" or label[0].isdigit():
+        if not _is_data_row(label):
             continue
         rows.append({"name": label, **comparison(values, unit)})
     return rows
@@ -104,7 +158,7 @@ def parse_pending_rows(lines: list[str]) -> list[dict[str, Any]]:
         if not parsed:
             continue
         label, values = parsed
-        if not label or label.upper() == "TOTAL" or label[0].isdigit():
+        if not _is_data_row(label):
             continue
         rows.append(
             {
@@ -159,7 +213,7 @@ def export_csvs(snapshot: dict[str, Any], output_dir: Path) -> list[Path]:
             writer.writerows(rows)
         written.append(path)
 
-    write_rows("national_metrics.csv", snapshot["national_rows"])
+    write_rows(CSV_FILENAMES["national"], snapshot["national_rows"])
 
     power_by_direction = {row["name"]: row for row in snapshot["direction_power"]}
     directions = []
@@ -173,7 +227,7 @@ def export_csvs(snapshot: dict[str, Any], output_dir: Path) -> list[Path]:
             "power_previous_year_to_date": power.get("previous_year_to_date"),
             "power_since_program_start": power.get("since_program_start"),
         })
-    write_rows("direction_metrics.csv", directions)
+    write_rows(CSV_FILENAMES["directions"], directions)
 
     districts = []
     for row in snapshot["districts"]:
@@ -181,9 +235,9 @@ def export_csvs(snapshot: dict[str, Any], output_dir: Path) -> list[Path]:
         flat.update({f"power_{key}": value for key, value in row.get("installed_power", {}).items() if key != "name"})
         flat.update({f"pending_{key}": value for key, value in (row.get("pending_dossiers") or {}).items() if key != "district"})
         districts.append(flat)
-    write_rows("district_metrics.csv", districts)
-    write_rows("installation_sizes.csv", snapshot["installation_sizes"])
-    write_rows("pending_dossiers.csv", snapshot["pending_dossiers"])
+    write_rows(CSV_FILENAMES["districts"], districts)
+    write_rows(CSV_FILENAMES["sizes"], snapshot["installation_sizes"])
+    write_rows(CSV_FILENAMES["pending"], snapshot["pending_dossiers"])
     return written
 
 
@@ -196,41 +250,25 @@ def parse_report(source: Path) -> dict[str, Any]:
     period_match = re.search(r"(?:Etat|Mars|Janvier|Février|Avril|Mai|Juin|Juillet|Août|Septembre|Octobre|Novembre|Décembre)\s*:?\s*(\w+)\s+(20\d{2})", text, re.IGNORECASE)
     if period_match:
         month_name, year = period_match.groups()
-        report_period = f"{year}-{MONTHS.get(month_name.lower(), '01')}"
+        report_period = f"{year}-{MONTHS.get(month_name.lower(), DEFAULT_MONTH)}"
     else:
-        report_period = "unknown"
+        report_period = UNKNOWN_PERIOD
 
     national_rows = []
-    national_start = next(i for i, line in enumerate(lines) if "Nombre d’installations PV" in line)
-    for line in lines[national_start : national_start + 16]:
+    national_start = next(i for i, line in enumerate(lines) if NATIONAL_TABLE_ANCHOR in line)
+    for line in lines[national_start : national_start + NATIONAL_TABLE_ROWS]:
         parsed = numeric_tail(line, 7) or numeric_tail(line, 6)
         if parsed:
             label, values = parsed
             if label and not label[0].isdigit():
-                national_rows.append({"name": label, **comparison(values, "reported")})
+                national_rows.append({"name": label, **comparison(values, SNAPSHOT_NATIONAL_UNIT)})
 
-    direction_installations = parse_comparison_rows(
-        section(lines, "3.3. Nombre d'IPV par Direction", "3.4. Nombre des IPV par District"),
-        "installations",
-    )
-    district_installations = parse_comparison_rows(
-        section(lines, "3.4. Nombre des IPV par District", "4. Puissances Installées"),
-        "installations",
-    )
-    direction_power = parse_comparison_rows(
-        section(lines, "4.3. Puissances Installées par Direction", "4.4. Puissances Installées par District"),
-        "MW",
-    )
-    district_power = parse_comparison_rows(
-        section(lines, "4.4. Puissances Installées par District", "5. Répartition des IPV"),
-        "MW",
-    )
-    pending = parse_pending_rows(
-        section(lines, "7. Nombre de dossiers PV en instance", "Programme Prosol")
-    )
-    installation_sizes = parse_size_rows(
-        section(lines, "5.1. Nombre d'installation PV", "5.2. Puissances installées")
-    )
+    direction_installations = parse_comparison_rows(section(lines, *SECTION_DIRECTION_INSTALLATIONS), "installations")
+    district_installations = parse_comparison_rows(section(lines, *SECTION_DISTRICT_INSTALLATIONS), "installations")
+    direction_power = parse_comparison_rows(section(lines, *SECTION_DIRECTION_POWER), "MW")
+    district_power = parse_comparison_rows(section(lines, *SECTION_DISTRICT_POWER), "MW")
+    pending = parse_pending_rows(section(lines, *SECTION_PENDING))
+    installation_sizes = parse_size_rows(section(lines, *SECTION_SIZES))
 
     power_by_district = {row["name"]: row for row in district_power}
     districts = []
@@ -259,19 +297,17 @@ def parse_report(source: Path) -> dict[str, Any]:
         "current_year_to_date": sum(row["current_year_to_date"] for row in pending),
         "since_2018": sum(row["since_2018"] for row in pending),
     }
-    expected = {
-        "installations": {"current_month": 3211, "current_year_to_date": 9340, "since_program_start": 144979},
-        "installed_power_mw": {"current_month": 11.8, "current_year_to_date": 33.8, "since_program_start": 456.0},
-        "pending_dossiers": {"current_year_to_date": 3171, "since_2018": 5475},
-    }
+    # Copied so that consumers editing the snapshot cannot mutate the module
+    expected = {name: dict(values) for name, values in EXPECTED.items()}
     power_gaps = {
-        key: round(expected["installed_power_mw"][key] - district_power_totals[key], 2)
+        key: round(expected["installed_power_mw"][key] - district_power_totals[key], POWER_GAP_DECIMALS)
         for key in expected["installed_power_mw"]
     }
     district_names = [row["name"] for row in district_installations]
     pending_names = [row["district"] for row in pending]
     duplicate_districts = sorted({name for name in district_names if district_names.count(name) > 1})
     missing_pending_rows = sorted(set(district_names) - set(pending_names))
+    within_power_tolerance = all(abs(gap) <= POWER_GAP_TOLERANCE_MW for gap in power_gaps.values())
     reconciliation = {
         "district_count": len(district_names),
         "pending_dossier_count": len(pending_names),
@@ -282,22 +318,22 @@ def parse_report(source: Path) -> dict[str, Any]:
         "pending_dossiers": pending_totals,
         "expected": expected,
         "district_power_gap_mw": power_gaps,
-        # The source report itself has a documented district-to-national
-        # reconciliation gap of up to 0.3 MW; do not hide or reject it.
-        "power_gap_within_report_tolerance": all(abs(gap) <= 0.3 for gap in power_gaps.values()),
+        # The source report has a documented district-to-national gap; keep it
+        # visible instead of silently rejecting the snapshot.
+        "power_gap_within_report_tolerance": within_power_tolerance,
         "passed": (
-            len(district_names) == 50
-            and len(pending_names) == 50
+            len(district_names) == EXPECTED_DISTRICT_COUNT
+            and len(pending_names) == EXPECTED_DISTRICT_COUNT
             and not duplicate_districts
             and not missing_pending_rows
             and district_installation_totals == expected["installations"]
-            and all(abs(gap) <= 0.3 for gap in power_gaps.values())
+            and within_power_tolerance
             and pending_totals == expected["pending_dossiers"]
         ),
     }
 
     return {
-        "scope": "rooftop_pv",
+        "scope": SNAPSHOT_SCOPE,
         "report_period": report_period,
         "emission_date": emission_date,
         "source_file": source.name,
@@ -308,7 +344,7 @@ def parse_report(source: Path) -> dict[str, Any]:
         "districts": districts,
         "installation_sizes": installation_sizes,
         "pending_dossiers": pending,
-        "excluded_sections": ["6. Chauffe-Eau-Solaire (CES)"],
+        "excluded_sections": list(EXCLUDED_SECTIONS),
     }
 
 
@@ -323,24 +359,23 @@ def main() -> None:
     snapshot = parse_report(args.source)
     if not snapshot["reconciliation"]["passed"]:
         raise SystemExit("Prosol report reconciliation failed: district totals do not match the official national totals.")
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_json_atomic(args.output, snapshot)
 
-    registry_path = args.registry or args.output.parent / "report_registry.json"
-    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    registry_path = args.registry or args.output.parent / REGISTRY_FILENAME
+    # Strict read: a corrupt registry must not be silently replaced by a new one
     registry = json.loads(registry_path.read_text(encoding="utf-8")) if registry_path.exists() else []
     entry = {
         "report_period": snapshot["report_period"],
         "emission_date": snapshot["emission_date"],
         "source_file": snapshot["source_file"],
-        "snapshot_file": str(args.output),
+        "snapshot_file": relative_to_project(args.output),
         "scope": snapshot["scope"],
         "reconciliation_passed": snapshot["reconciliation"]["passed"],
         "imported_at": datetime.now(timezone.utc).isoformat(),
     }
     registry = [item for item in registry if item.get("source_file") != entry["source_file"]]
     registry.append(entry)
-    registry_path.write_text(json.dumps(registry, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_json_atomic(registry_path, registry)
 
     if args.csv_dir:
         csv_files = export_csvs(snapshot, args.csv_dir)
