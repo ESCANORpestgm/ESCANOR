@@ -23,19 +23,29 @@ async function initHome() {
         let todayPeak = 0, tmrwPeak = 0;
         let currentEst = 0, currentUnc = 0, todayUnc = 0, tmrwUnc = 0;
 
-        const nowHour  = new Date().getHours();
+        const nowTs  = Date.now();
         const todayStr = new Date().toISOString().split('T')[0];
         const tmrwStr  = new Date(Date.now() + 86400000).toISOString().split('T')[0];
 
-        nationalData.forEach((row, i) => {
-            const d       = new Date(row.timestamp);
-            const dateStr = row.timestamp.split(' ')[0];
+        // Work on a chronologically sorted copy — the API rows are not
+        // guaranteed to arrive in timestamp order.
+        const sortedRows = [...nationalData].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+        // "Now" row = first forecast point at or after the current time;
+        // once the horizon starts in the past (e.g. evening), fall back to
+        // the latest row not after now, else the very first row.
+        const nowRow = sortedRows.find(r => new Date(r.timestamp).getTime() >= nowTs)
+            || [...sortedRows].reverse().find(r => new Date(r.timestamp).getTime() < nowTs)
+            || sortedRows[0];
+        if (nowRow) {
+            currentEst = nowRow.forecast_p50_mw;
+            currentUnc = nowRow.forecast_p90_mw - nowRow.forecast_p10_mw;
+        }
+
+        sortedRows.forEach(row => {
+            const dateStr = row.timestamp.split(' ')[0].split('T')[0];
             const unc     = row.forecast_p90_mw - row.forecast_p10_mw;
 
-            if (i === 0 || (d.getHours() === nowHour && dateStr === todayStr)) {
-                currentEst = row.forecast_p50_mw;
-                currentUnc = unc;
-            }
             if (dateStr === todayStr && row.forecast_p50_mw > todayPeak) {
                 todayPeak = row.forecast_p50_mw; todayUnc = unc;
             }
