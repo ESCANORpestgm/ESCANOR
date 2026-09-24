@@ -4,24 +4,13 @@ __pycache__/
 .venv/
 venv/
 
-# Local environment and operational state
+# Local environment
 .env
-results/prosol/presol.db
-results/prosol/prosol_history.db
-results/**/*.db-wal
-results/**/*.db-shm
-results/model_artifacts/model_registry/artifacts/
-results/evaluations/
-results/measurements/metering_buffer.csv
-results/history/retrain_log.csv
 
-# Generated reports and cache
+# Generated results (databases, caches, datasets, evaluations, reports, figures)
+# All content is regenerable from source data + models, so nothing is tracked.
+results/
 reports/generated/
-results/datasets/pvgis_cache/
-results/history/metrics_by_horizon.csv
-results/datasets/*
-results/measurements/*
-results/model_artifacts/model_validation_metrics.json
 
 # Editor / OS
 .vscode/
