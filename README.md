@@ -1,4 +1,4 @@
-# PréSol — National Rooftop PV Forecast Platform
+# ESCANOR — National Rooftop PV Forecast Platform
 
 **ESCANOR × STEG** — A platform for forecasting Tunisia's aggregated rooftop solar production from intra-day to D+3, across STEG districts, Directions, governorates, and national level.
 
@@ -6,7 +6,7 @@ Built for **STEG National Dispatching** as part of the **PESTGM 7.0 Technical Ch
 
 ## Overview
 
-PréSol combines weather, STEG capacity, and production data to generate operational PV forecasts.
+ESCANOR combines weather, STEG capacity, and production data to generate operational PV forecasts.
 
 - **Multi-horizon:** intra-day → D+3
 - **Spatial:** 50 districts → 7 Directions → governorates → national
@@ -137,7 +137,7 @@ The frontend provides:
 
 | Source | Usage |
 |---|---|
-| STEG Prosol | Capacity and connection data |
+| STEG ESCANOR | Capacity and connection data |
 | Open-Meteo | Weather forecasts |
 | PVGIS-JRC | Historical/reference PV data |
 | STEG metering | Production data when available |
@@ -145,7 +145,7 @@ The frontend provides:
 
 ## Data & Limitations
 
-STEG capacity and connection data are based on the **March 2026 Prosol dashboard**.
+STEG capacity and connection data are based on the **March 2026 ESCANOR dashboard**.
 
 Current hourly production training data is **physics-based synthetic data**, since per-installation historical metering was not provided. The architecture allows real production data to replace the synthetic generator without changing the downstream pipeline.
 
@@ -208,4 +208,4 @@ Generated artifacts under `results/` are not tracked in Git.
 - Siwar Mhamdi
 
 **ESCANOR × STEG**  
-**PESTGM 7.0 — Track 1: National Intelligent Platform for Forecasting Rooftop Solar Production**
+**PESTGM 7.0**

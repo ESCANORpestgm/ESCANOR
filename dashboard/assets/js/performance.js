@@ -190,7 +190,7 @@ async function initPerformance() {
         }
     } catch (e) { console.error('Daily accuracy error', e); }
 
-    // ── Calibration & Uncertainty ─────────────────────────────────────────────
+    // ── Feature Importance (training-info) ─────────────────────────────────────────────
     try {
         const trainingInfoRes = await fetch(`${API_BASE}/model/training-info?_=${Date.now()}`, { cache: 'no-store' });
         if (trainingInfoRes.ok) {
