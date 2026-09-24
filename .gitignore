@@ -19,6 +19,8 @@ results/history/retrain_log.csv
 reports/generated/
 results/datasets/pvgis_cache/
 results/history/metrics_by_horizon.csv
+results/datasets/*
+results/measurements/*
 results/model_artifacts/model_validation_metrics.json
 
 # Editor / OS
@@ -26,3 +28,4 @@ results/model_artifacts/model_validation_metrics.json
 .DS_Store
 
 *.md
+
