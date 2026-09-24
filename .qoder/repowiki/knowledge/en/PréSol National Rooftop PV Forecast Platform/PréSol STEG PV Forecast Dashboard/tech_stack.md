@@ -1,0 +1,1 @@
+Vanilla HTML/CSS/JS with Chart.js (line charts with zoom & annotation plugins), Leaflet (OpenStreetMap + Esri basemaps), i18next for EN/FR/AR translations, and fetch-based HTTP calls to a Python backend at `http://localhost:8000`.

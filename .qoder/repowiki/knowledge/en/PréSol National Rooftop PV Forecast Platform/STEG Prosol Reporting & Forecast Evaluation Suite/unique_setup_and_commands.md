@@ -1,0 +1,1 @@
+Run `report/generate_report.py` to execute the full Prosol import → update → HTML report pipeline; evaluate forecasts by invoking the evaluation metrics package so that `evaluation_registry.list_evaluations()` can later surface results via the API.

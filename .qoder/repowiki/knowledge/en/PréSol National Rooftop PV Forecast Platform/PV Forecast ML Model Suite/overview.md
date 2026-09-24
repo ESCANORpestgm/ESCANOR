@@ -1,0 +1,1 @@
+End-to-end LightGBM quantile-forecasting suite that trains, evaluates, persists, and promotes PV production models across STEG districts with a file-based version registry.

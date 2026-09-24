@@ -1,0 +1,1 @@
+Python stack shared across all children: FastAPI + uvicorn for the API surface, LightGBM + scikit-learn for modeling, pandas/numpy for data, APScheduler for background drift detection/retraining, matplotlib/reportlab for reports, and Pydantic for request/response schemas.

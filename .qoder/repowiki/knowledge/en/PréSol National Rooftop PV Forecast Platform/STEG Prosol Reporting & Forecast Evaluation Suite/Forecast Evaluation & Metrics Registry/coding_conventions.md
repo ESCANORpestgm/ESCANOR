@@ -1,0 +1,6 @@
+- Evaluation runs are persisted as immutable directories created with `mkdir(parents=True, exist_ok=False)` so re-runs never overwrite prior results.
+- Each run directory contains a `summary.json` plus optional `historical_metadata.json`; readers in `evaluation_registry` tolerate missing or malformed files by catching `OSError`/`JSONDecodeError` and skipping entries.
+- Forecast and actual inputs are validated against explicit column-set requirements before any merge, raising `ValueError` with the missing columns listed.
+- Metrics are computed via pandas groupby over dimension keys (location_id, horizon_bucket, and optional district/direction) using a shared `_metric_row` helper that emits mae_kw, rmse_kw, nrmse_pct, bias_kw, p10_p90_coverage_pct, interval width, and mean lead time.
+- Horizon buckets are derived from lead-time minutes through a single `_horizon_bucket` mapper producing fixed string labels consumed consistently across grouping and summaries.
+- CLI entry points use `argparse` with `__doc__` as the description and print the resulting summary path on success.

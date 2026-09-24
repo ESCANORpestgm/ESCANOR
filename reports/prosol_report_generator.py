@@ -540,7 +540,7 @@ def generate_html_prosol_report(
   </div>
 
   <div class="footer-note">
-    <span>Généré par la Plateforme Nationale Intelligente de Prévision PV &bull; Algorithmes PréSol</span>
+    <span>Généré par la Plateforme Nationale Intelligente de Prévision PV &bull; Algorithmes ESCANOR</span>
     <span>Date d'émission : {data['emission_date']} &bull; Source : Données réelles STEG DCD/DCM</span>
   </div>
 </div>

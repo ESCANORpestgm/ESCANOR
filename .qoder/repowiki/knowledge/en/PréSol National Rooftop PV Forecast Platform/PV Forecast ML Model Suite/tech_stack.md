@@ -1,0 +1,1 @@
+LightGBM gradient-boosted quantile regression, pandas/numpy for feature engineering and aggregation, joblib for model serialization, and plain JSON files under `results/model_registry/` as an immutable model/version/training-run registry.

@@ -1,25 +1,17 @@
-"""Forecast and forecast-export endpoints."""
-
-import io
+"""Forecast query endpoints — national, direction, district, and governorate."""
 
 import pandas as pd
-from fastapi import APIRouter, HTTPException, Query, Security
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, HTTPException, Security
 
-from api.core import (
-    CAPACITY_LOOKUP,
-    DISTRICT_CAPACITY_LOOKUP,
-    METER_BUFFER,
-    compute_bias_correction,
-    get_forecast_frame,
-    require_api_key,
-    _state,
-)
+from api.config import DISTRICT_CAPACITY_LOOKUP, require_api_key
+from api.services import compute_bias_correction, get_forecast_frame, _state
 from data.steg_districts import DISTRICT_BY_NAME, DIRECTIONS
 from models.aggregation import aggregate
 
 router = APIRouter(prefix="/forecast", tags=["Forecast"])
-grid_router = APIRouter(tags=["Grid Integration"])
+
+
+# ── National ─────────────────────────────────────────────────────────────────
 
 
 @router.get("/national")
@@ -54,6 +46,9 @@ def forecast_intraday():
     return {"resolution": "15min", "bias_corrected": scale is not None, "bias_scale_factor": round(scale, 4) if scale else None, "data": window.to_dict(orient="records")}
 
 
+# ── Direction ────────────────────────────────────────────────────────────────
+
+
 @router.get("/directions")
 def forecast_all_directions(horizon_days: int = 3):
     result = aggregate(get_forecast_frame(horizon_days), "direction")
@@ -69,6 +64,9 @@ def forecast_direction(direction: str, horizon_days: int = 3):
         raise HTTPException(404, f"Unknown Direction '{direction}'. Options: {DIRECTIONS}")
     result["timestamp"] = result["timestamp"].astype(str)
     return result.to_dict(orient="records")
+
+
+# ── District / STEG district ────────────────────────────────────────────────
 
 
 @router.get("/steg-district/{name}")
@@ -128,55 +126,7 @@ def forecast_governorate(governorate: str, horizon_days: int = 3):
     return result[["timestamp", "forecast_p10_mw", "forecast_p50_mw", "forecast_p90_mw"]].to_dict(orient="records")
 
 
-@router.get("/map")
-def forecast_map(horizon_hours: int = 0):
-    forecast = get_forecast_frame(max(1, horizon_hours // 24 + 1))
-    target = pd.Timestamp.now().floor("h") + pd.Timedelta(hours=horizon_hours)
-    snapshot = forecast[forecast.timestamp == target]
-    if snapshot.empty:
-        snapshot = forecast[forecast.timestamp == forecast.timestamp.min()]
-    output = []
-    for _, row in snapshot.iterrows():
-        name = row.get("steg_district") or row.get("governorate")
-        district = DISTRICT_BY_NAME.get(name)
-        capacity = district.installed_capacity_mwc if district else 10.0
-        direction = district.direction if district else "Tunis"
-        output.append({
-            "governorate": name, "steg_district": name, "district": direction, "direction": direction,
-            "installed_capacity_mwc": capacity,
-            "forecast_p50_mw": round(row["forecast_p50_mw"], 2),
-            "forecast_p10_mw": round(row["forecast_p10_mw"], 2),
-            "forecast_p90_mw": round(row["forecast_p90_mw"], 2),
-            "uncertainty_mw": round(row["forecast_p90_mw"] - row["forecast_p10_mw"], 2),
-            "uncertainty_ratio": round((row["forecast_p90_mw"] - row["forecast_p10_mw"]) / row["forecast_p50_mw"], 3) if row["forecast_p50_mw"] > 0 else 0,
-            "utilization_pct": round(100 * row["forecast_p50_mw"] / capacity, 1) if capacity else 0,
-            "temp_c": round(float(row.get("temp_c", 20.0)), 1),
-            "cloud_cover_pct": round(float(row.get("cloud_cover_pct", 30.0)), 0),
-            "ghi_wm2": round(float(row.get("ghi_wm2", 0.0)), 0),
-            "wind_speed_ms": round(float(row.get("wind_speed_ms", 3.0)), 1),
-        })
-    return {"timestamp": str(target), "data_source": _state["data_source"], "governorates": output, "districts": output}
-
-
-@router.get("/timelapse")
-def forecast_timelapse(hours: int = 48):
-    hours = max(1, min(hours, 78))
-    forecast = get_forecast_frame(max(1, hours // 24 + 1))
-    frames = []
-    for timestamp in sorted(forecast.timestamp.unique())[:hours]:
-        snapshot = forecast[forecast.timestamp == timestamp]
-        districts = []
-        total = 0.0
-        for _, row in snapshot.iterrows():
-            name = row.get("steg_district") or row.get("governorate")
-            district = DISTRICT_BY_NAME.get(name)
-            capacity = district.installed_capacity_mwc if district else 10.0
-            direction = district.direction if district else "Tunis"
-            p50, p10, p90 = round(row["forecast_p50_mw"], 2), round(row["forecast_p10_mw"], 2), round(row["forecast_p90_mw"], 2)
-            total += p50
-            districts.append({"governorate": name, "direction": direction, "p50": p50, "p10": p10, "p90": p90, "uncertainty_ratio": round((p90 - p10) / p50, 3) if p50 > 0 else 0, "utilization_pct": round(100 * p50 / capacity, 1) if capacity else 0, "cloud_cover_pct": round(float(row.get("cloud_cover_pct", 0)), 0), "ghi_wm2": round(float(row.get("ghi_wm2", 0)), 0), "temp_c": round(float(row.get("temp_c", 20.0)), 1)})
-        frames.append({"timestamp": str(timestamp), "governorates": districts, "national_total_mw": round(total, 1)})
-    return frames
+# ── Cache control ────────────────────────────────────────────────────────────
 
 
 @router.post("/refresh", tags=["Grid Integration"])
@@ -184,19 +134,3 @@ def force_refresh(_key: str = Security(require_api_key)):
     _state["cache_time"] = None
     forecast = get_forecast_frame(3)
     return {"refreshed": True, "data_source": _state["data_source"], "rows": len(forecast), "cache_time": str(_state["cache_time"])}
-
-
-@grid_router.get("/export/forecast")
-def export_forecast(level: str = Query("national", enum=["national", "direction", "district", "steg_district"]), fmt: str = Query("csv", enum=["csv", "xml"]), horizon_days: int = 3):
-    dataframe = aggregate(get_forecast_frame(horizon_days), level)
-    dataframe["timestamp"] = dataframe["timestamp"].astype(str)
-    if fmt == "csv":
-        buffer = io.StringIO()
-        dataframe.to_csv(buffer, index=False)
-        buffer.seek(0)
-        return StreamingResponse(buffer, media_type="text/csv", headers={"Content-Disposition": f"attachment; filename=presol_forecast_{level}.csv"})
-    lines = ['<?xml version="1.0" encoding="UTF-8"?>', "<forecast>"]
-    for _, row in dataframe.iterrows():
-        lines.append(f"  <row>{''.join(f'<{key}>{value}</{key}>' for key, value in row.items())}</row>")
-    lines.append("</forecast>")
-    return StreamingResponse(io.StringIO("\n".join(lines)), media_type="application/xml", headers={"Content-Disposition": f"attachment; filename=presol_forecast_{level}.xml"})

@@ -1,0 +1,1 @@
+Each script is runnable standalone via `python -m models.<script>`; the `__main__` blocks in `ml_forecast.py` and `aggregation.py` generate synthetic data, train or aggregate forecasts, and write results to `results/` and `models/artifacts/quantile_models.joblib`.

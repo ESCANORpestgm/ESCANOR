@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="PréSol — Model health diagnostics, backtest metrics, retrain history and historical accuracy tracking.">
-    <title>PréSol — Model Health</title>
+    <meta name="description" content="ESCANOR — Model health diagnostics, backtest metrics, retrain history and historical accuracy tracking.">
+    <title>ESCANOR — Model Health</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
@@ -14,7 +14,11 @@
 <body data-page="performance">
 
     <aside class="sidebar">
-        <div class="brand"><h1>PréSol</h1><p data-i18n="brand-sub">STEG PV Forecasting</p></div>
+        <div class="brand">
+            <div class="brand-mark">
+                <img src="assets/static/steg-logo.svg" alt="STEG">
+            </div>
+            <h1>ESCANOR</h1><p data-i18n="brand-sub">STEG PV Forecasting</p></div>
         <div class="lang-toggle">
             <button class="lang-btn active" data-lang="en">EN</button>
             <button class="lang-btn" data-lang="fr">FR</button>
@@ -28,6 +32,7 @@
             <li><a href="alerts.html"><span class="nav-icon">🔔</span><span data-i18n="nav-alerts">Alerts</span><span class="nav-badge" id="nav-alert-badge">0</span></a></li>
             <li><a href="registry.html"><span class="nav-icon">🏗️</span><span data-i18n="nav-registry">Park Registry</span></a></li>
             <li><a href="prosol-history.html"><span class="nav-icon">🗂️</span><span data-i18n="nav-prosol-history">Prosol History</span></a></li>
+            <li><a href="scenarios.html"><span class="nav-icon">🌤️</span><span data-i18n="nav-scenarios">What-If Scenarios</span></a></li>
         </ul>
         <div class="api-status-box">
             <div><span class="status-indicator" id="status-dot"></span><span id="status-text">Connecting…</span></div>
@@ -48,6 +53,51 @@
             <div class="learning-cadence-card"><strong data-i18n="forecast-refresh">Forecast refresh</strong><span data-i18n="every-15-minutes">Every 15 minutes</span></div>
             <div class="learning-cadence-card"><strong data-i18n="candidate-training">Candidate training</strong><span data-i18n="daily">Daily</span></div>
             <div class="learning-cadence-card warning"><strong data-i18n="current-source">Current source</strong><span data-i18n="pvgis-modeled">PVGIS modeled data</span></div>
+        </section>
+
+        <!-- Calibration & Uncertainty -->
+        <section class="panel">
+            <h3 class="panel-title">Calibration &amp; Uncertainty Engine <span class="title-badge">CONFORMAL</span></h3>
+            <p id="calibration-meta" class="text-muted" style="margin-bottom:1rem;">Loading calibration data…</p>
+            <div class="training-info-grid">
+                <!-- Calibration KPIs -->
+                <div class="training-info-card">
+                    <h4 class="training-info-card-title">Conformal Prediction</h4>
+                    <div id="conformal-kpis" class="training-kpi-grid">
+                        <div class="training-kpi">
+                            <span class="training-kpi-value" id="conformal-q-value">—</span>
+                            <span class="training-kpi-label">q̂ correction (MW)</span>
+                        </div>
+                        <div class="training-kpi">
+                            <span class="training-kpi-value" id="calibration-status-badge">—</span>
+                            <span class="training-kpi-label">Status</span>
+                        </div>
+                    </div>
+                    <p class="text-muted" style="font-size:0.78rem;margin-top:0.5rem;">
+                        Split-conformal calibration (Lei et al. 2018). q̂ is added to the P10–P90 half-width to achieve target 80% coverage.
+                    </p>
+                </div>
+                <!-- Horizon Scales -->
+                <div class="training-info-card">
+                    <h4 class="training-info-card-title">Horizon-Dependent Band Scaling</h4>
+                    <div id="horizon-scales-grid" class="horizon-scales-grid">
+                        <div class="text-muted">Loading…</div>
+                    </div>
+                    <p class="text-muted" style="font-size:0.78rem;margin-top:0.5rem;">
+                        Per-horizon correction factors computed from calibration residuals. Values &gt; 1.0 widen the uncertainty band for longer lead times.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Feature Importance -->
+        <section class="panel">
+            <h3 class="panel-title">Feature Importance <span class="title-badge">P50 ENSEMBLE</span></h3>
+            <p id="feature-importance-meta" class="text-muted" style="margin-bottom:0.75rem;">Loading feature importances…</p>
+            <div class="chart-wrapper" style="height:320px;">
+                <canvas id="featureImportanceChart"></canvas>
+            </div>
+            <div id="model-info-bar" class="text-muted" style="margin-top:0.75rem;font-size:0.82rem;"></div>
         </section>
 
         <!-- Historical Accuracy -->
@@ -71,6 +121,22 @@
             </p>
         </section>
 
+        <!-- Daily Accuracy Trends -->
+        <section class="panel">
+            <h3 class="panel-title">Daily Accuracy Trends <span class="title-badge">DAYLIGHT ONLY</span></h3>
+            <p id="daily-meta" class="text-muted" style="margin-bottom:0.75rem;">Loading daily metrics…</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1rem;">
+                <div>
+                    <p class="text-muted" style="margin:0 0 0.35rem;font-size:0.82rem;">MAE &amp; nRMSE (MW) — lower is better</p>
+                    <div class="chart-wrapper"><canvas id="dailyErrorChart"></canvas></div>
+                </div>
+                <div>
+                    <p class="text-muted" style="margin:0 0 0.35rem;font-size:0.82rem;">P10–P90 Coverage &amp; Bias — higher coverage is better</p>
+                    <div class="chart-wrapper"><canvas id="dailyCoverageChart"></canvas></div>
+                </div>
+            </div>
+        </section>
+
         <!-- Training and validation performance -->
         <section class="panel">
             <h3 class="panel-title">Training vs Validation Performance <span class="title-badge">PVGIS MODEL</span></h3>
@@ -88,6 +154,16 @@
             <p id="validation-error" style="color:var(--status-warn);display:none;margin-top:10px;font-size:0.85rem;"></p>
         </section>
 
+        <!-- Training Progression — How the Model Learned -->
+        <section class="panel">
+            <h3 class="panel-title">Training Progression <span class="title-badge">LEARNING CURVE</span></h3>
+            <p id="progression-meta" class="text-muted" style="margin-bottom:0.75rem;">Loading training history…</p>
+            <div class="chart-wrapper" style="height:280px;">
+                <canvas id="progressionChart"></canvas>
+            </div>
+            <div id="progression-table-wrap" style="margin-top:1rem;"></div>
+        </section>
+
         <!-- Backtest Metrics Table -->
         <section class="panel">
             <h3 class="panel-title" data-i18n="perf-metrics-title">
@@ -99,7 +175,8 @@
                     <tr>
                         <th>Horizon</th>
                         <th>nRMSE — Our Model</th>
-                        <th>nRMSE — Persistence</th>
+                        <th>nRMSE — Persistence 24h</th>
+                        <th>nRMSE — Persistence 168h</th>
                         <th>nRMSE — Clear-Sky</th>
                         <th>P10–P90 Coverage</th>
                         <th>Samples</th>
@@ -125,16 +202,94 @@
             <div class="retrain-log" id="retrain-log">
                 <p style="color:var(--text-secondary);font-size:0.85rem;">No retrain events yet. Import a validated rooftop snapshot to enable hourly learning.</p>
             </div>
+            <!-- Drift baseline comparison chart -->
+            <div id="drift-chart-wrapper" class="chart-wrapper" style="height:260px;margin-top:1rem;display:none;">
+                <canvas id="driftBaselineChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Retrain Sources -->
+        <section class="panel">
+            <h3 class="panel-title" data-i18n="retrain-sources-title">
+                Model Retraining
+                <span class="title-badge">MANUAL</span>
+            </h3>
+            <p class="text-muted" style="margin-bottom:1rem;" data-i18n="retrain-sources-sub">
+                Choose a data source to retrain the quantile forecast model. The new candidate is promoted only if it outperforms the current production model.
+            </p>
+            <div class="retrain-sources-grid">
+
+                <!-- Card 1: Latest validated snapshot -->
+                <div class="retrain-source-card">
+                    <div class="retrain-source-icon">📂</div>
+                    <h4 data-i18n="retrain-latest-title">Latest Validated Snapshot</h4>
+                    <p class="text-muted" data-i18n="retrain-latest-desc">
+                        Uses the most recent validated rooftop measurement file already imported on disk.
+                    </p>
+                    <button id="manual-retrain-btn" class="btn btn-primary retrain-source-btn" type="button">
+                        🔄 <span data-i18n="retrain-latest-btn">Retrain from snapshot</span>
+                    </button>
+                    <p id="manual-retrain-status" class="retrain-source-status text-muted"></p>
+                </div>
+
+                <!-- Card 2: Upload CSV -->
+                <div class="retrain-source-card">
+                    <div class="retrain-source-icon">📤</div>
+                    <h4 data-i18n="retrain-upload-title">Upload CSV File</h4>
+                    <p class="text-muted" data-i18n="retrain-upload-desc">
+                        Upload a CSV with columns: timestamp_utc, location_id, power_kw, district, direction, ghi_wm2, temp_c, cloud_cover_pct.
+                    </p>
+                    <div class="retrain-upload-row">
+                        <label class="btn btn-secondary retrain-file-label" for="retrain-csv-input">
+                            📎 <span data-i18n="retrain-upload-choose">Choose file</span>
+                        </label>
+                        <input id="retrain-csv-input" type="file" accept=".csv" hidden>
+                        <span id="retrain-csv-filename" class="text-muted retrain-filename">No file selected</span>
+                    </div>
+                    <button id="retrain-upload-btn" class="btn btn-primary retrain-source-btn" type="button" disabled>
+                        📤 <span data-i18n="retrain-upload-btn">Upload &amp; retrain</span>
+                    </button>
+                    <p id="retrain-upload-status" class="retrain-source-status text-muted"></p>
+                </div>
+
+                <!-- Card 3: Generate synthetic data -->
+                <div class="retrain-source-card">
+                    <div class="retrain-source-icon">🧪</div>
+                    <h4 data-i18n="retrain-synth-title">Generate Synthetic Data</h4>
+                    <p class="text-muted" data-i18n="retrain-synth-desc">
+                        Generate simulated rooftop PV data for all STEG districts using the synthetic weather generator (no internet required).
+                    </p>
+                    <div class="retrain-synth-options">
+                        <label class="text-muted" style="font-size:0.8rem;">
+                            <span data-i18n="retrain-synth-start">Start date</span>
+                            <input id="retrain-synth-start" type="date" value="2024-01-01" class="retrain-date-input">
+                        </label>
+                        <label class="text-muted" style="font-size:0.8rem;">
+                            <span data-i18n="retrain-synth-end">End date</span>
+                            <input id="retrain-synth-end" type="date" value="2025-01-01" class="retrain-date-input">
+                        </label>
+                    </div>
+                    <button id="retrain-synth-btn" class="btn btn-primary retrain-source-btn" type="button">
+                        🧪 <span data-i18n="retrain-synth-btn">Generate &amp; retrain</span>
+                    </button>
+                    <p id="retrain-synth-status" class="retrain-source-status text-muted"></p>
+                </div>
+
+            </div>
+
+            <!-- Retrain progress indicator -->
+            <div id="retrain-progress" class="retrain-progress" hidden>
+                <div class="retrain-progress-bar"><div class="retrain-progress-fill"></div></div>
+                <span class="text-muted" style="font-size:0.82rem;" data-i18n="retrain-progress">Retraining in progress…</span>
+            </div>
         </section>
 
         <!-- Immutable model registry -->
         <section class="panel">
             <div class="flex-between performance-toolbar" style="gap:1rem;flex-wrap:wrap;">
                 <h3 class="panel-title">Model Registry <span class="title-badge">VERSIONED</span></h3>
-                <button id="manual-retrain-btn" class="btn btn-primary" type="button">🔄 Run retraining</button>
             </div>
             <p id="production-model" class="text-muted" style="margin-bottom:0.75rem;">Loading production model…</p>
-            <p id="manual-retrain-status" class="text-muted" style="margin-bottom:0.75rem;"></p>
             <div class="table-scroll"><table class="data-table" id="model-versions-table"></table></div>
         </section>
     </main>

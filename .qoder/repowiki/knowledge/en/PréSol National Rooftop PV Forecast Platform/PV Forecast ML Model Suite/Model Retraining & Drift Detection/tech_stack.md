@@ -1,0 +1,1 @@
+Pandas for time-series manipulation; scikit-learn joblib artifacts for model serialization; a local filesystem-based model registry under `models/model_registry.py` tracking training runs and promoted versions.

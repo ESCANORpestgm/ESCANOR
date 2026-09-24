@@ -1,56 +1,31 @@
-"""Shared API state, paths, authentication, forecasting, and lifecycle services."""
+"""Runtime state, forecast pipeline, scheduler, and application lifecycle.
+
+Depends only on ``api.config`` for paths and lookups.
+"""
 
 from __future__ import annotations
 
-import os
-import sys
 import threading
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
-from pathlib import Path
 from typing import Any, cast
 
 import pandas as pd
-from fastapi import HTTPException, Security
-from fastapi.security.api_key import APIKeyHeader
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from data.steg_districts import (
-    DISTRICT_CAPACITY_LOOKUP,
-    DISTRICT_DUST_LOOKUP,
-    GOVERNORATES,
-    STEG_DISTRICTS,
+from api.config import (
+    CALIBRATION_PATH,
+    CAPACITY_LOOKUP,
+    DUST_LOOKUP,
+    METER_BUFFER,
+    MODEL_PATH,
 )
+from data.steg_districts import STEG_DISTRICTS
 from ingestion import weather_client
 from ingestion.synthetic_data import generate_all
-from models.ml_forecast import load_models, predict
+from models.ml_forecast import load_calibration, load_models, predict
 from reports.prosol_history_db import import_generated_snapshots
 
-ROOT = Path(__file__).resolve().parents[1]
-MODEL_PATH = ROOT / "models" / "artifacts" / "quantile_models.joblib"
-RESULTS_DIR = ROOT / "results"
-METER_BUFFER = RESULTS_DIR / "metering_buffer.csv"
-RETRAIN_LOG = RESULTS_DIR / "retrain_log.csv"
-RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-CAPACITY_LOOKUP = {
-    **{item.name: item.installed_capacity_mwc for item in GOVERNORATES},
-    **DISTRICT_CAPACITY_LOOKUP,
-}
-DUST_LOOKUP = {
-    **{item.name: item.dust_loss_pct for item in GOVERNORATES},
-    **DISTRICT_DUST_LOOKUP,
-}
-
-_API_KEY = os.environ.get("PRESOL_API_KEY", "dev-key")
-_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
-
-
-def require_api_key(key: str = Security(_api_key_header)) -> str:
-    if key != _API_KEY:
-        raise HTTPException(status_code=403, detail="Invalid or missing X-API-Key header.")
-    return key
-
+# ── Shared application state ────────────────────────────────────────────────
 
 _state: dict[str, Any] = {
     "models": None,
@@ -60,7 +35,16 @@ _state: dict[str, Any] = {
     "refresh_lock": threading.Lock(),
     "capacity_lookup": CAPACITY_LOOKUP,
     "dust_lookup": DUST_LOOKUP,
+    "calibration": None,
 }
+
+# ── Lazy loaders ────────────────────────────────────────────────────────────
+
+
+def _get_calibration() -> dict:
+    if _state["calibration"] is None:
+        _state["calibration"] = load_calibration(str(CALIBRATION_PATH))
+    return _state["calibration"]
 
 
 def get_models() -> dict:
@@ -69,7 +53,11 @@ def get_models() -> dict:
     return _state["models"]
 
 
+# ── Forecast pipeline ───────────────────────────────────────────────────────
+
+
 def build_forecast(horizon_days: int = 3) -> pd.DataFrame:
+    """Build (or return cached) national PV forecast for all STEG districts."""
     with _state["refresh_lock"]:
         now = pd.Timestamp.now(tz="Africa/Tunis").tz_localize(None).floor("h")
         if _state["cache"] is not None and _state["cache_time"] is not None:
@@ -77,6 +65,7 @@ def build_forecast(horizon_days: int = 3) -> pd.DataFrame:
             if age_min < 14:
                 return _state["cache"]
 
+        # Live weather → synthetic fallback
         try:
             weather = weather_client.build_live_weather_dataframe(STEG_DISTRICTS, days_ahead=horizon_days)
             end = now + pd.Timedelta(days=horizon_days)
@@ -93,17 +82,26 @@ def build_forecast(horizon_days: int = 3) -> pd.DataFrame:
             weather = weather[(weather.timestamp >= now) & (weather.timestamp <= now + pd.Timedelta(days=horizon_days))]
             _state["data_source"] = "synthetic"
 
-        forecast = predict(get_models(), cast(pd.DataFrame, weather), CAPACITY_LOOKUP, DUST_LOOKUP)
+        forecast = predict(
+            get_models(), cast(pd.DataFrame, weather), CAPACITY_LOOKUP, DUST_LOOKUP,
+            conformal_q=_get_calibration().get("conformal_q", 0.0),
+            horizon_scales=_get_calibration().get("horizon_scales"),
+        )
         _state["cache"] = forecast
         _state["cache_time"] = now
         return forecast
 
 
 def get_forecast_frame(horizon_days: int = 3) -> pd.DataFrame:
+    """Public alias for ``build_forecast``."""
     return build_forecast(horizon_days)
 
 
+# ── Bias correction ─────────────────────────────────────────────────────────
+
+
 def compute_bias_correction() -> float | None:
+    """Ratio of actual MW to forecast P50 over the last 3 hours, or ``None``."""
     if not METER_BUFFER.exists():
         return None
     try:
@@ -120,6 +118,9 @@ def compute_bias_correction() -> float | None:
         return float(ratio)
     except Exception:
         return None
+
+
+# ── Scheduled tasks ─────────────────────────────────────────────────────────
 
 
 def scheduled_refresh() -> None:
@@ -139,8 +140,12 @@ def scheduled_retrain() -> None:
         print(f"[scheduler] hourly retraining failed: {error}")
 
 
+# ── Application lifespan ────────────────────────────────────────────────────
+
+
 @asynccontextmanager
 async def lifespan(app: Any):
+    """FastAPI lifespan hook: import snapshots, start background scheduler."""
     try:
         import_generated_snapshots()
     except Exception as error:

@@ -1,1 +1,1 @@
-"""FastAPI route modules for the PréSol backend."""
+"""FastAPI route modules for the ESCANOR backend."""

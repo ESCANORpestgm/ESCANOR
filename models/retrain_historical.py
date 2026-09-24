@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from api.core import CAPACITY_LOOKUP, DUST_LOOKUP, RETRAIN_LOG
+from api.config import CAPACITY_LOOKUP, DUST_LOOKUP, RETRAIN_LOG
 from models.retrain import check_drift_and_retrain
 from models.rooftop_training_adapter import build_training_frame
 

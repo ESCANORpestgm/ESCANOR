@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="PréSol — Spatial Timelapse Map of Tunisia with live weather conditions and P10/P50/P90 uncertainty across 50 STEG districts.">
-    <title>PréSol — Spatial Timelapse</title>
+    <meta name="description" content="ESCANOR — Spatial Timelapse Map of Tunisia with live weather conditions and P10/P50/P90 uncertainty across 50 STEG districts.">
+    <title>ESCANOR — Spatial Timelapse</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -134,7 +134,10 @@
 
     <aside class="sidebar">
         <div class="brand">
-            <h1>PréSol</h1>
+            <div class="brand-mark">
+                <img src="assets/static/steg-logo.svg" alt="STEG">
+            </div>
+            <h1>ESCANOR</h1>
             <p data-i18n="brand-sub">STEG PV Forecasting</p>
         </div>
         <div class="lang-toggle">
@@ -150,6 +153,7 @@
             <li><a href="alerts.html"><span class="nav-icon">🔔</span><span data-i18n="nav-alerts">Alerts</span><span class="nav-badge" id="nav-alert-badge">0</span></a></li>
             <li><a href="registry.html"><span class="nav-icon">🏗️</span><span data-i18n="nav-registry">Park Registry</span></a></li>
             <li><a href="prosol-history.html"><span class="nav-icon">🗂️</span><span data-i18n="nav-prosol-history">Prosol History</span></a></li>
+            <li><a href="scenarios.html"><span class="nav-icon">🌤️</span><span data-i18n="nav-scenarios">What-If Scenarios</span></a></li>
         </ul>
         <div class="api-status-box">
             <div><span class="status-indicator" id="status-dot"></span><span id="status-text">Connecting…</span></div>

@@ -1,0 +1,12 @@
+schema_version: 1
+module_path: results_artifacts
+title: PV Forecast Results & Model Registry Artifacts
+scope:
+    - results/
+source_files: []
+depends_on: []
+related_to:
+    - path: data_pipeline
+    - path: ml_models
+    - path: ml_models/retraining_jobs
+    - path: reporting/evaluation_metrics

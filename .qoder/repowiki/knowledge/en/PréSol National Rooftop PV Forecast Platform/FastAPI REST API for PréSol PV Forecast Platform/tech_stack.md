@@ -1,0 +1,1 @@
+FastAPI with CORSMiddleware; APScheduler `BackgroundScheduler` for periodic forecast refresh and daily model retraining; pandas DataFrames as the in-memory forecast cache; joblib-serialized quantile ML models loaded at startup.

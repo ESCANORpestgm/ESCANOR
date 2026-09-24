@@ -1,0 +1,1 @@
+Persistent output directory storing PV forecast time-series, model registry metadata and artifacts, rooftop datasets, evaluation summaries, and ProSol installation update logs produced by the forecasting pipeline.

@@ -1,14 +1,16 @@
 """Metering, retraining, and model-registry endpoints."""
 
+import io
 import json
 import threading
 from pathlib import Path
 
 import pandas as pd
-from fastapi import APIRouter, HTTPException, Security
+from fastapi import APIRouter, HTTPException, Security, UploadFile, File
 from pydantic import BaseModel
 
-from api.core import METER_BUFFER, MODEL_PATH, RESULTS_DIR, RETRAIN_LOG, require_api_key, _state
+from api.config import METER_BUFFER, MODEL_PATH, RESULTS_DIR, RETRAIN_LOG, require_api_key
+from api.services import _state
 from models.model_registry import current_production, list_model_versions, list_training_runs
 from models.rooftop_training_adapter import build_training_frame
 
@@ -42,6 +44,7 @@ def _run_retrain(training_frame: pd.DataFrame) -> None:
         if result.get("retrained"):
             _state["models"] = None
             _state["cache_time"] = None
+            _state["calibration"] = None
         _write_retrain_state({"status": "completed", "finished_at": pd.Timestamp.now().isoformat(), "result": result})
         print(f"[retrain] {result}")
     except Exception as error:
@@ -130,6 +133,106 @@ def trigger_manual_retrain():
     return result
 
 
+def _save_and_start_retrain(measurement_csv: bytes, source_label: str) -> dict[str, object]:
+    """Save a measurement CSV as a validated snapshot and start retraining."""
+    if not _RETRAIN_LOCK.acquire(blocking=False):
+        return {"accepted": False, "message": "Retraining already in progress."}
+    try:
+        timestamp = pd.Timestamp.now().strftime("%Y%m%dT%H%M%S")
+        snapshot_dir = RESULTS_DIR / "measurements" / f"{source_label}_{timestamp}"
+        snapshot_dir.mkdir(parents=True, exist_ok=True)
+        measurement_path = snapshot_dir / "validated_measurements.csv"
+        measurement_path.write_bytes(measurement_csv)
+        training_frame = build_training_frame(measurement_path)
+        rows = len(training_frame)
+        locations = int(training_frame["governorate"].nunique())
+        _write_retrain_state({
+            "status": "started",
+            "started_at": pd.Timestamp.now().isoformat(),
+            "snapshot": str(snapshot_dir.relative_to(RESULTS_DIR.parent)),
+            "rows": rows,
+            "source": source_label,
+        })
+
+        def run_and_release() -> None:
+            try:
+                _run_retrain(training_frame)
+            finally:
+                _RETRAIN_LOCK.release()
+
+        threading.Thread(target=run_and_release, daemon=True).start()
+        return {
+            "accepted": True,
+            "message": f"Retraining started from {source_label} data.",
+            "snapshot": str(snapshot_dir.relative_to(RESULTS_DIR.parent)),
+            "rows": rows,
+            "locations": locations,
+        }
+    except Exception as error:
+        _RETRAIN_LOCK.release()
+        raise HTTPException(400, str(error)) from error
+
+
+@router.post("/models/retrain/upload", tags=["Model Registry"])
+async def retrain_from_csv(file: UploadFile = File(...)):
+    """Upload a CSV with rooftop measurements and trigger retraining.
+
+    Expected columns: timestamp_utc, location_id, power_kw, district, direction,
+    ghi_wm2, temp_c, cloud_cover_pct.  Optional: quality_status (rows with
+    quality_status != 'valid' are filtered out).
+    """
+    content = await file.read()
+    if not content:
+        raise HTTPException(400, "Uploaded file is empty.")
+    try:
+        frame = pd.read_csv(io.BytesIO(content))
+    except Exception as error:
+        raise HTTPException(400, f"Unable to parse CSV: {error}") from error
+    required = {"timestamp_utc", "location_id", "power_kw", "district", "direction"}
+    missing = required - set(frame.columns)
+    if missing:
+        raise HTTPException(400, f"CSV is missing required columns: {sorted(missing)}. "
+                            f"Found: {sorted(frame.columns.tolist())}")
+    weather_required = {"ghi_wm2", "temp_c", "cloud_cover_pct"}
+    weather_missing = weather_required - set(frame.columns)
+    if weather_missing:
+        raise HTTPException(400, f"CSV is missing weather columns: {sorted(weather_missing)}.")
+    try:
+        return _save_and_start_retrain(content, "upload")
+    except HTTPException:
+        raise
+    except Exception as error:
+        raise HTTPException(400, str(error)) from error
+
+
+@router.post("/models/retrain/synthetic", tags=["Model Registry"])
+def retrain_from_synthetic(start_date: str = "2024-01-01", end_date: str = "2025-01-01"):
+    """Generate synthetic training data for all STEG districts and trigger retraining."""
+    from ingestion.synthetic_data import generate_all
+    from data.steg_districts import STEG_DISTRICTS
+
+    try:
+        synthetic_frame = generate_all(STEG_DISTRICTS, start=start_date, end=end_date)
+    except Exception as error:
+        raise HTTPException(400, f"Synthetic data generation failed: {error}") from error
+
+    # Convert synthetic schema (timestamp, governorate, production_mw) → training schema
+    training_csv = io.BytesIO()
+    out = pd.DataFrame()
+    out["timestamp_utc"] = pd.to_datetime(synthetic_frame["timestamp"]).dt.tz_localize("UTC")
+    out["location_id"] = synthetic_frame["district"] + "_synth"
+    out["power_kw"] = synthetic_frame["production_mw"] * 1000.0
+    out["district"] = synthetic_frame["district"]
+    out["direction"] = synthetic_frame["direction"]
+    out["ghi_wm2"] = synthetic_frame["ghi_wm2"]
+    out["temp_c"] = synthetic_frame["temp_c"]
+    out["cloud_cover_pct"] = synthetic_frame["cloud_cover_pct"]
+    out["quality_status"] = "valid"
+    out.to_csv(training_csv, index=False)
+
+    return _save_and_start_retrain(training_csv.getvalue(), "synthetic")
+
+
 @router.get("/retrain/status")
 def retrain_status():
     schedule = {
@@ -141,7 +244,18 @@ def retrain_status():
     if not RETRAIN_LOG.exists():
         return {"retrain_log": [], "schedule": schedule, "message": "Continuous learning is waiting for a validated rooftop snapshot."}
     log = pd.read_csv(RETRAIN_LOG)
-    return {"retrain_log": log.sort_values("timestamp", ascending=False).head(10).to_dict(orient="records"), "schedule": schedule}
+    # Enrich log entries with baseline breakdown when available
+    records = []
+    for _, row in log.sort_values("timestamp", ascending=False).head(10).iterrows():
+        entry = row.to_dict()
+        # Parse baseline_maes if stored as string
+        if "baseline_maes" in entry and isinstance(entry.get("baseline_maes"), str):
+            try:
+                entry["baseline_maes"] = json.loads(entry["baseline_maes"].replace("'", '"'))
+            except (json.JSONDecodeError, ValueError):
+                entry["baseline_maes"] = {}
+        records.append(entry)
+    return {"retrain_log": records, "schedule": schedule}
 
 
 @router.get("/models/production", tags=["Model Registry"])

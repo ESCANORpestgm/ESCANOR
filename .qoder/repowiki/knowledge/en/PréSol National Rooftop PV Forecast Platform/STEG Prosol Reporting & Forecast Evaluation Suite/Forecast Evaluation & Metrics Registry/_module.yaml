@@ -1,0 +1,11 @@
+schema_version: 1
+module_path: reporting/evaluation_metrics
+title: Forecast Evaluation & Metrics Registry
+scope:
+    - reports/evaluation_registry.py
+    - reports/forecast_evaluator.py
+    - reports/historical_evaluation.py
+source_files: []
+depends_on: []
+related_to:
+    - path: results_artifacts

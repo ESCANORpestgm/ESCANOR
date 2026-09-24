@@ -1,0 +1,1 @@
+Orchestrates STEG Prosol dashboard data import, snapshot persistence, live installation updates, HTML report generation, and immutable forecast-vs-measurement evaluation discovery into a unified reporting surface.

@@ -1,4 +1,4 @@
-# PréSol PV Forecast Platform — Project Task List
+# ESCANOR PV Forecast Platform — Project Task List
 
 This checklist follows the official STEG Prosol monthly report structure and keeps the forecasting scope limited to aggregated rooftop PV installations.
 

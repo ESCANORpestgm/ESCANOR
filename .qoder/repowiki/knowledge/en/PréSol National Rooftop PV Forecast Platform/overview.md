@@ -1,0 +1,1 @@
+End-to-end STEG rooftop PV forecasting platform that ingests weather and Prosol data, trains LightGBM quantile models, serves forecasts via FastAPI, and visualizes them through a live-connect dashboard.

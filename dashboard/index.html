@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="PréSol — STEG national rooftop PV production forecasting platform. National overview with P10/P50/P90 uncertainty bands and Prosol displacement metrics.">
-    <title>PréSol — National Overview</title>
+    <meta name="description" content="ESCANOR — STEG national rooftop PV production forecasting platform. National overview with P10/P50/P90 uncertainty bands and Prosol displacement metrics.">
+    <title>ESCANOR — National Overview</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
@@ -13,10 +13,38 @@
 </head>
 <body data-page="home">
 
+    <!-- Intro Video Splash Overlay -->
+    <div id="splash">
+        <video id="hero-video" autoplay muted playsinline preload="auto">
+            <source src="assets/static/steg_intro.mp4" type="video/mp4">
+        </video>
+        <div class="video-scrim"></div>
+        <button id="btn-toggle-sound" class="sound-toggle-btn" title="Toggle sound" aria-label="Toggle video sound">
+            <span class="sound-icon-muted">🔇</span>
+            <span class="sound-icon-active" style="display:none;">🔊</span>
+        </button>
+        <div class="splash-inner">
+            <img class="splash-logo" src="assets/static/steg-logo.svg" alt="STEG">
+            <h1>ESCANOR</h1>
+            <p class="tagline">STEG National Rooftop PV Forecast Platform — From invisible to predictable</p>
+            <div class="scroll-hint">
+                <span>Scroll or click to enter</span>
+                <span class="chev">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </span>
+            </div>
+        </div>
+    </div>
+
     <aside class="sidebar">
         <div class="brand">
-            <h1>PréSol</h1>
-            <p data-i18n="brand-sub">STEG PV Forecasting</p>
+            <div class="brand-mark">
+                <img src="assets/static/steg-logo.svg" alt="STEG">
+            </div>
+            <div>
+                <h1>ESCANOR</h1>
+                <p data-i18n="brand-sub">STEG PV Forecasting</p>
+            </div>
         </div>
         <div class="lang-toggle">
             <button class="lang-btn active" data-lang="en">EN</button>
@@ -31,6 +59,7 @@
             <li><a href="alerts.html"><span class="nav-icon">🔔</span><span data-i18n="nav-alerts">Alerts</span><span class="nav-badge" id="nav-alert-badge">0</span></a></li>
             <li><a href="registry.html"><span class="nav-icon">🏗️</span><span data-i18n="nav-registry">Park Registry</span></a></li>
             <li><a href="prosol-history.html"><span class="nav-icon">🗂️</span><span data-i18n="nav-prosol-history">Prosol History</span></a></li>
+            <li><a href="scenarios.html"><span class="nav-icon">🌤️</span><span data-i18n="nav-scenarios">What-If Scenarios</span></a></li>
         </ul>
 
         <div style="padding: 0 1rem 1rem 1rem;">
@@ -133,5 +162,112 @@
 
     <script src="https://cdn.jsdelivr.net/npm/i18next@23.16.8/dist/umd/i18next.min.js"></script>
     <script src="assets/js/app.js"></script>
+
+    <!-- Splash dismiss logic — only shows once per browser session -->
+    <script>
+    (function(){
+      // Clean up legacy flag from localStorage (migrated to sessionStorage)
+      try { localStorage.removeItem('escanor_intro_seen'); } catch(e){}
+
+      var splash = document.getElementById('splash');
+      if(!splash) return;
+
+      // Skip intro entirely if user has already seen it
+      if(sessionStorage.getItem('escanor_intro_seen') === '1'){
+        splash.style.display = 'none';
+        return;
+      }
+
+      var progress = 0;
+      var THRESHOLD = 500;
+      var dismissed = false;
+      var touchStartY = null;
+
+      document.body.style.overflow = 'hidden';
+
+      // ── Sound toggle ──────────────────────────────────────────────
+      var video = document.getElementById('hero-video');
+      var soundBtn = document.getElementById('btn-toggle-sound');
+      var iconMuted = soundBtn && soundBtn.querySelector('.sound-icon-muted');
+      var iconActive = soundBtn && soundBtn.querySelector('.sound-icon-active');
+
+      if(soundBtn && video){
+        soundBtn.addEventListener('click', function(e){
+          e.stopPropagation();
+          if(video.muted){
+            video.muted = false;
+            video.play().catch(function(){});
+            iconMuted.style.display = 'none';
+            iconActive.style.display = '';
+            soundBtn.classList.add('is-unmuted');
+          } else {
+            video.muted = true;
+            iconMuted.style.display = '';
+            iconActive.style.display = 'none';
+            soundBtn.classList.remove('is-unmuted');
+          }
+        });
+      }
+
+      function applyProgress(){
+        var pct = Math.min(1, Math.max(0, progress));
+        splash.style.transform = 'translateY(' + (-pct * 100) + '%)';
+        splash.style.opacity = String(1 - pct * 0.5);
+        if(pct >= 1) finishDismiss();
+      }
+
+      function finishDismiss(){
+        if(dismissed) return;
+        dismissed = true;
+        sessionStorage.setItem('escanor_intro_seen', '1');
+        splash.style.transition = 'transform 0.5s ease, opacity 0.5s ease';
+        splash.style.transform = 'translateY(-100%)';
+        splash.style.opacity = '0';
+        splash.classList.add('dismissed');
+        document.body.style.overflow = '';
+        var video = document.getElementById('hero-video');
+        if(video) setTimeout(function(){ video.pause(); }, 520);
+        setTimeout(function(){ splash.style.display = 'none'; }, 520);
+      }
+
+      function onWheel(e){
+        if(dismissed) return;
+        e.preventDefault();
+        if(e.deltaY > 0){
+          progress += e.deltaY / THRESHOLD;
+          applyProgress();
+        }
+      }
+
+      function onTouchStart(e){
+        touchStartY = e.touches[0].clientY;
+      }
+
+      function onTouchMove(e){
+        if(dismissed || touchStartY === null) return;
+        var currentY = e.touches[0].clientY;
+        var deltaY = touchStartY - currentY;
+        if(deltaY > 0){
+          e.preventDefault();
+          progress += deltaY / THRESHOLD;
+          touchStartY = currentY;
+          applyProgress();
+        }
+      }
+
+      window.addEventListener('wheel', onWheel, {passive:false});
+      window.addEventListener('touchstart', onTouchStart, {passive:true});
+      window.addEventListener('touchmove', onTouchMove, {passive:false});
+
+      splash.addEventListener('click', function(){
+        progress = 1;
+        splash.style.transition = 'transform 0.6s ease, opacity 0.6s ease';
+        applyProgress();
+      });
+
+      // Auto-dismiss after 12s if untouched
+      setTimeout(function(){ if(!dismissed) finishDismiss(); }, 12000);
+    })();
+    </script>
 </body>
 </html>

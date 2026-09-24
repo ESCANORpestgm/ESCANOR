@@ -7,23 +7,52 @@ Aggregation levels:
   'direction'     — the 7 STEG Directions de Distribution
   'national'      — Tunisia total
 
-Uncertainty bands are combined assuming partial independence of district-level
-forecast errors (sqrt-sum-of-squares on the half-width). For adjacent districts
-sharing the same cloud system, this slightly under-states uncertainty — a full
-spatial covariance model would be more accurate (Bremnes 2004).
+Uncertainty bands can be combined with optional spatial correlation
+(Bremnes 2004). When a correlation matrix is supplied, the aggregate
+half-width uses the full covariance sum: hw_agg = sqrt(hw^T @ R @ hw).
+Otherwise falls back to the independent sqrt-sum-of-squares approximation.
 """
 
 import numpy as np
 import pandas as pd
 
 
-def _combine_band(p50_sum: float, half_widths: np.ndarray):
-    """Combine per-district uncertainty half-widths into an aggregate band."""
-    combined_half_width = np.sqrt((half_widths ** 2).sum())
+def _combine_band(p50_sum: float, half_widths: np.ndarray,
+                  corr_matrix: np.ndarray | None = None):
+    """Combine per-district uncertainty half-widths into an aggregate band.
+
+    When corr_matrix is None, assumes independence (sqrt-sum-of-squares).
+    When supplied, uses full covariance: hw_agg = sqrt(hw^T @ R @ hw).
+    This correctly accounts for spatially correlated forecast errors
+    between adjacent districts sharing the same cloud systems.
+    """
+    hw = np.asarray(half_widths, dtype=float)
+    if corr_matrix is not None and corr_matrix.shape == (len(hw), len(hw)):
+        cov = np.outer(hw, hw) * corr_matrix
+        combined_half_width = float(np.sqrt(np.clip(np.sum(cov), 0, None)))
+    else:
+        combined_half_width = float(np.sqrt((hw ** 2).sum()))
     return p50_sum - combined_half_width, p50_sum + combined_half_width
 
 
-def aggregate(df_forecast: pd.DataFrame, level: str) -> pd.DataFrame:
+def build_spatial_correlation(models, df_hist: pd.DataFrame,
+                               capacity_lookup: dict, dust_lookup: dict = None,
+                               level: str = "national") -> pd.DataFrame:
+    """Estimate residual correlation matrix from historical forecast errors.
+
+    Returns a DataFrame (district × district) of pairwise Pearson correlations
+    of P50 residuals. Use this as the corr_matrix argument to aggregate().
+    """
+    from models.ml_forecast import predict as _predict
+    preds = _predict(models, df_hist, capacity_lookup, dust_lookup)
+    preds["residual"] = preds["production_mw"] - preds["forecast_p50_mw"]
+    pivot = preds.pivot_table(index="timestamp", columns="governorate",
+                               values="residual", aggfunc="mean")
+    return pivot.corr()
+
+
+def aggregate(df_forecast: pd.DataFrame, level: str,
+              corr_matrix: pd.DataFrame | None = None) -> pd.DataFrame:
     """
     df_forecast: output of ml_forecast.predict(), must include
     'timestamp', 'steg_district' (or 'governorate'), 'direction',
@@ -34,6 +63,9 @@ def aggregate(df_forecast: pd.DataFrame, level: str) -> pd.DataFrame:
       'direction'    — sum by STEG Direction de Distribution (7 groups)
       'steg_district'— keep per-STEG-district rows (50 groups)
       'district'     — legacy alias for 'direction' (backward compat)
+
+    corr_matrix: optional spatial correlation DataFrame (index = district names).
+    When provided and level='national', uses full covariance aggregation.
     """
     df = df_forecast.copy()
     df["half_width"] = (df["forecast_p90_mw"] - df["forecast_p10_mw"]) / 2
@@ -64,13 +96,30 @@ def aggregate(df_forecast: pd.DataFrame, level: str) -> pd.DataFrame:
         raise ValueError(f"Unknown aggregation level '{level}'. "
                          f"Use 'national', 'direction', 'governorate', 'steg_district', or 'district'.")
 
+    spatial_col = "governorate" if "governorate" in df.columns else (
+        "steg_district" if "steg_district" in df.columns else None)
+
     rows = []
     for keys, g in df.groupby(group_cols):
         if not isinstance(keys, tuple):
             keys = (keys,)
 
         p50_sum = g["forecast_p50_mw"].sum()
-        lo, hi = _combine_band(p50_sum, g["half_width"].values)
+
+        # Use spatial correlation when available at national level
+        sub_corr = None
+        if corr_matrix is not None and spatial_col and level == "national":
+            districts_in_group = g[spatial_col].unique().tolist()
+            common = [d for d in districts_in_group if d in corr_matrix.index]
+            if len(common) > 1:
+                sub_corr = corr_matrix.loc[common, common].values
+                hw_group = g.loc[g[spatial_col].isin(common), "half_width"].values
+            else:
+                hw_group = g["half_width"].values
+        else:
+            hw_group = g["half_width"].values
+
+        lo, hi = _combine_band(p50_sum, hw_group, sub_corr)
         row = {
             "forecast_p50_mw": round(p50_sum, 3),
             "forecast_p10_mw": round(max(lo, 0), 3),
@@ -89,7 +138,8 @@ def aggregate(df_forecast: pd.DataFrame, level: str) -> pd.DataFrame:
     return result
 
 
-def aggregate_with_weather(df_forecast: pd.DataFrame, level: str) -> pd.DataFrame:
+def aggregate_with_weather(df_forecast: pd.DataFrame, level: str,
+                            corr_matrix: pd.DataFrame | None = None) -> pd.DataFrame:
     """
     Like aggregate(), but also carries through mean weather conditions per group.
     Used by the /forecast/map endpoint to show weather alongside the forecast.
@@ -117,7 +167,7 @@ def aggregate_with_weather(df_forecast: pd.DataFrame, level: str) -> pd.DataFram
             keys = (keys,)
 
         p50_sum = g["forecast_p50_mw"].sum()
-        lo, hi = _combine_band(p50_sum, g["half_width"].values)
+        lo, hi = _combine_band(p50_sum, g["half_width"].values, corr_matrix=None)
         row = {
             "forecast_p50_mw": round(p50_sum, 3),
             "forecast_p10_mw": round(max(lo, 0), 3),
@@ -156,6 +206,12 @@ if __name__ == "__main__":
     print("\n=== National level (noon snapshot) ===")
     nat_agg = aggregate(fc, "national")
     print(nat_agg.iloc[[12]])
+
+    print("\n=== With spatial correlation ===")
+    hist_df = generate_all(STEG_DISTRICTS, start="2024-05-01", end="2024-05-15")
+    corr = build_spatial_correlation(models, hist_df, capacity_lookup, dust_lookup)
+    nat_corr = aggregate(fc, "national", corr_matrix=corr)
+    print(nat_corr.iloc[[12]])
 
     print("\n=== STEG District level (Sfax districts at noon) ===")
     sd_agg = aggregate(fc, "steg_district")

@@ -1,0 +1,1 @@
+Requires a running backend at `API_BASE = 'http://localhost:8000'` exposing `/status`, `/cache/status`, `/alerts`, `/steg-districts`, `/forecast/timelapse`, `/forecast/map`, `/reports/prosol/summary`, `/reports/prosol/html`, and `/registry/pipeline`; serves directly from the filesystem (no build step).

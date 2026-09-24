@@ -6,9 +6,11 @@ lightgbm
 scikit-learn
 joblib
 fastapi
+python-multipart
 uvicorn
 pydantic<3
 matplotlib
 reportlab
 apscheduler
 python-dotenv
+optuna

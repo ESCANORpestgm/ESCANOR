@@ -1,0 +1,1 @@
+Python with SQLite for Prosol history persistence; JSON-based immutable artifacts (`summary.json`, `historical_metadata.json`) as the shared contract between the evaluation pipeline and the registry; Jinja-free inline HTML templating for the official STEG-branded report.

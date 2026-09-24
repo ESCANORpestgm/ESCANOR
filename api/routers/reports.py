@@ -7,7 +7,8 @@ import pandas as pd
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse
 
-from api.core import RESULTS_DIR, ROOT, get_forecast_frame
+from api.config import RESULTS_DIR, ROOT
+from api.services import get_forecast_frame
 from data.steg_districts import calculate_displacement
 from models.aggregation import aggregate
 from reports.evaluation_registry import get_evaluation, list_evaluations

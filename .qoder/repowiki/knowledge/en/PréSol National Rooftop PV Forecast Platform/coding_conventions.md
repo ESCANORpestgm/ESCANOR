@@ -1,0 +1,4 @@
+- All persistent state (forecasts, model versions, Prosol snapshots, evaluation summaries) is written to the shared `results/` directory rather than a database, so every child reads/writes the same on-disk schema.
+- Forecast outputs are expressed as calibrated quantiles P10/P50/P90 produced simultaneously by LightGBM quantile regression, and uncertainty widens with lead time via a horizon-aware feature.
+- Data provenance is explicitly labeled as real (STEG Prosol, Open-Meteo/PVGIS) versus synthetic (physics-based production simulator), and the dashboard/API surfaces this distinction to consumers.
+- Background maintenance tasks (drift detection, automatic retraining, report ingestion) are implemented as APScheduler jobs invoked from the FastAPI application lifecycle.

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="PréSol — immutable historical STEG Prosol rooftop PV report snapshots.">
-    <title>PréSol — Prosol History</title>
+    <meta name="description" content="ESCANOR — immutable historical STEG Prosol rooftop PV report snapshots.">
+    <title>ESCANOR — Prosol History</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
@@ -12,7 +12,11 @@
 </head>
 <body data-page="prosol-history">
     <aside class="sidebar">
-        <div class="brand"><h1>PréSol</h1><p data-i18n="brand-sub">STEG PV Forecasting</p></div>
+        <div class="brand">
+            <div class="brand-mark">
+                <img src="assets/static/steg-logo.svg" alt="STEG">
+            </div>
+            <h1>ESCANOR</h1><p data-i18n="brand-sub">STEG PV Forecasting</p></div>
         <div class="lang-toggle">
             <button class="lang-btn active" data-lang="en">EN</button>
             <button class="lang-btn" data-lang="fr">FR</button>
@@ -25,6 +29,7 @@
             <li><a href="alerts.html"><span class="nav-icon">🔔</span><span data-i18n="nav-alerts">Alerts</span></a></li>
             <li><a href="registry.html"><span class="nav-icon">🏗️</span><span data-i18n="nav-registry">Park Registry</span></a></li>
             <li><a href="prosol-history.html" class="active"><span class="nav-icon">🗂️</span><span data-i18n="nav-prosol-history">Prosol History</span></a></li>
+            <li><a href="scenarios.html"><span class="nav-icon">🌤️</span><span data-i18n="nav-scenarios">What-If Scenarios</span></a></li>
         </ul>
         <div class="api-status-box">
             <div><span class="status-indicator" id="status-dot"></span><span id="status-text">Connecting…</span></div>

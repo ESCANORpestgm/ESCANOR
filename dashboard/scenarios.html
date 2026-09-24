@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ESCANOR — simulate weather scenarios and their impact on national PV generation.">
+    <title>ESCANOR — What-If Scenarios</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0/dist/chartjs-plugin-zoom.min.js"></script>
+</head>
+<body data-page="scenarios">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-mark">
+                <img src="assets/static/steg-logo.svg" alt="STEG">
+            </div>
+            <h1>ESCANOR</h1><p data-i18n="brand-sub">STEG PV Forecasting</p></div>
+        <div class="lang-toggle">
+            <button class="lang-btn active" data-lang="en">EN</button>
+            <button class="lang-btn" data-lang="fr">FR</button>
+            <button class="lang-btn" data-lang="ar">ع</button>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html"><span class="nav-icon">⚡</span><span data-i18n="nav-national">National Overview</span></a></li>
+            <li><a href="districts.html"><span class="nav-icon">📊</span><span data-i18n="nav-regional">Regional Analysis</span></a></li>
+            <li><a href="map.html"><span class="nav-icon">🗺️</span><span data-i18n="nav-map">Spatial Timelapse</span></a></li>
+            <li><a href="performance.html"><span class="nav-icon">🔬</span><span data-i18n="nav-perf">Model Health</span></a></li>
+            <li><a href="alerts.html"><span class="nav-icon">🔔</span><span data-i18n="nav-alerts">Alerts</span></a></li>
+            <li><a href="registry.html"><span class="nav-icon">🏗️</span><span data-i18n="nav-registry">Park Registry</span></a></li>
+            <li><a href="prosol-history.html"><span class="nav-icon">🗂️</span><span data-i18n="nav-prosol-history">Prosol History</span></a></li>
+            <li><a href="scenarios.html" class="active"><span class="nav-icon">🌤️</span><span data-i18n="nav-scenarios">What-If Scenarios</span></a></li>
+        </ul>
+        <div class="api-status-box">
+            <div><span class="status-indicator" id="status-dot"></span><span id="status-text">Connecting…</span></div>
+            <div class="cache-age" id="status-cap">Cap: -- MWc</div>
+            <div class="cache-age" id="cache-age-display"></div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <h2 data-i18n="scenarios-title">What-If Scenarios</h2>
+            <p data-i18n="scenarios-sub">Simulate extreme weather events and their impact on national PV generation forecast.</p>
+        </header>
+
+        <!-- Scenario presets -->
+        <section class="panel scenario-presets">
+            <h3 class="panel-title" data-i18n="scenarios-presets">Quick Presets</h3>
+            <div class="preset-grid" id="preset-grid">
+                <button class="preset-btn" data-preset="clear-sky">
+                    <span class="preset-icon">☀️</span>
+                    <span class="preset-name" data-i18n="preset-clear">Clear Sky</span>
+                    <span class="preset-desc" data-i18n="preset-clear-desc">Ideal conditions, no clouds</span>
+                </button>
+                <button class="preset-btn" data-preset="partly-cloudy">
+                    <span class="preset-icon">⛅</span>
+                    <span class="preset-name" data-i18n="preset-partial">Partly Cloudy</span>
+                    <span class="preset-desc" data-i18n="preset-partial-desc">Scattered clouds, mild impact</span>
+                </button>
+                <button class="preset-btn" data-preset="overcast">
+                    <span class="preset-icon">☁️</span>
+                    <span class="preset-name" data-i18n="preset-overcast">Overcast Day</span>
+                    <span class="preset-desc" data-i18n="preset-overcast-desc">Full cloud cover all day</span>
+                </button>
+                <button class="preset-btn" data-preset="heatwave">
+                    <span class="preset-icon">🌡️</span>
+                    <span class="preset-name" data-i18n="preset-heatwave">Heat Wave</span>
+                    <span class="preset-desc" data-i18n="preset-heatwave-desc">+15°C above normal temp.</span>
+                </button>
+                <button class="preset-btn" data-preset="dust-storm">
+                    <span class="preset-icon">🌪️</span>
+                    <span class="preset-name" data-i18n="preset-dust">Dust Storm</span>
+                    <span class="preset-desc" data-i18n="preset-dust-desc">Severe irradiance drop (Sahara)</span>
+                </button>
+                <button class="preset-btn" data-preset="heavy-rain">
+                    <span class="preset-icon">🌧️</span>
+                    <span class="preset-name" data-i18n="preset-rain">Heavy Rain</span>
+                    <span class="preset-desc" data-i18n="preset-rain-desc">Dense cloud + rain losses</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Custom sliders -->
+        <section class="panel scenario-controls">
+            <h3 class="panel-title" data-i18n="scenarios-custom">Custom Parameters</h3>
+            <div class="slider-grid">
+                <div class="slider-group">
+                    <label>
+                        <span data-i18n="slider-cloud">Cloud Cover Override</span>
+                        <span class="slider-val" id="val-cloud">0%</span>
+                    </label>
+                    <input type="range" id="slider-cloud" min="0" max="100" value="0" step="5">
+                    <span class="slider-hint" data-i18n="slider-cloud-hint">+100% = full overcast, -50% = clearer than forecast</span>
+                </div>
+                <div class="slider-group">
+                    <label>
+                        <span data-i18n="slider-temp">Temperature Offset</span>
+                        <span class="slider-val" id="val-temp">0°C</span>
+                    </label>
+                    <input type="range" id="slider-temp" min="-10" max="25" value="0" step="1">
+                    <span class="slider-hint" data-i18n="slider-temp-hint">PV efficiency drops ~0.4% per °C above 25°C (STC)</span>
+                </div>
+                <div class="slider-group">
+                    <label>
+                        <span data-i18n="slider-irradiance">Irradiance Scale</span>
+                        <span class="slider-val" id="val-irradiance">100%</span>
+                    </label>
+                    <input type="range" id="slider-irradiance" min="20" max="130" value="100" step="5">
+                    <span class="slider-hint" data-i18n="slider-irradiance-hint">Direct GHI multiplier (dust, haze, etc.)</span>
+                </div>
+                <div class="slider-group">
+                    <label>
+                        <span data-i18n="slider-soiling">Soiling / Dust Loss</span>
+                        <span class="slider-val" id="val-soiling">0%</span>
+                    </label>
+                    <input type="range" id="slider-soiling" min="0" max="60" value="0" step="5">
+                    <span class="slider-hint" data-i18n="slider-soiling-hint">Panel soiling loss (Saharan dust can reach 40-60%)</span>
+                </div>
+            </div>
+            <div class="scenario-actions">
+                <button class="btn btn-primary" id="btn-apply" data-i18n="scenario-apply">Apply Scenario</button>
+                <button class="btn btn-secondary" id="btn-reset" data-i18n="scenario-reset">Reset to Baseline</button>
+            </div>
+        </section>
+
+        <!-- Scope selector toolbar -->
+        <section class="panel scenario-scope">
+            <h3 class="panel-title" data-i18n="scenarios-scope-title">Simulation Scope</h3>
+            <div class="scope-bar">
+                <div class="scope-toggle" role="tablist">
+                    <button class="scope-btn active" data-scope="national" data-i18n="scope-national">National</button>
+                    <button class="scope-btn" data-scope="direction" data-i18n="scope-direction">Direction</button>
+                    <button class="scope-btn" data-scope="district" data-i18n="scope-district">District</button>
+                </div>
+                <div class="scope-selectors">
+                    <select id="select-direction" class="scope-select" hidden>
+                        <option value="" data-i18n="scope-select-direction">Select a Direction…</option>
+                    </select>
+                    <select id="select-district" class="scope-select" hidden>
+                        <option value="" data-i18n="scope-select-district">Search a district…</option>
+                    </select>
+                    <span class="scope-capacity" id="scope-capacity"></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Impact KPIs -->
+        <div class="kpi-grid scenario-kpis" id="scenario-kpis">
+            <div class="kpi-card">
+                <span class="kpi-label" data-i18n="kpi-baseline-peak">Baseline Peak</span>
+                <span class="kpi-value" id="kpi-base-peak">—</span>
+                <span class="kpi-hint" data-i18n="kpi-base-peak-hint">MW · original forecast</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label" data-i18n="kpi-scenario-peak">Scenario Peak</span>
+                <span class="kpi-value accent" id="kpi-scen-peak">—</span>
+                <span class="kpi-hint" data-i18n="kpi-scen-peak-hint">MW · after adjustments</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label" data-i18n="kpi-peak-drop">Peak Reduction</span>
+                <span class="kpi-value" id="kpi-drop">—</span>
+                <span class="kpi-hint" data-i18n="kpi-drop-hint">% change vs baseline</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label" data-i18n="kpi-energy-loss">Energy Loss (24h)</span>
+                <span class="kpi-value" id="kpi-energy-loss">—</span>
+                <span class="kpi-hint" data-i18n="kpi-energy-loss-hint">MWh lost vs baseline</span>
+            </div>
+        </div>
+
+        <!-- Comparison chart (time-series) -->
+        <section class="panel">
+            <h3 class="panel-title" data-i18n="scenarios-chart-title">Baseline vs Scenario Comparison</h3>
+            <div class="chart-wrapper" style="height:320px;">
+                <canvas id="scenarioChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Multi-direction comparison (bar chart) -->
+        <section class="panel" id="compare-panel" hidden>
+            <h3 class="panel-title" data-i18n="scenarios-compare-title">Impact Across All Directions</h3>
+            <p class="panel-sub" data-i18n="scenarios-compare-sub">Same scenario applied to each Direction de Distribution — peak and energy loss comparison.</p>
+            <div class="chart-wrapper" style="height:280px;">
+                <canvas id="compareChart"></canvas>
+            </div>
+            <div class="compare-table-wrap">
+                <table class="data-table" id="compare-table">
+                    <thead>
+                        <tr>
+                            <th data-i18n="compare-direction">Direction</th>
+                            <th data-i18n="compare-base-peak">Base Peak (MW)</th>
+                            <th data-i18n="compare-scen-peak">Scen. Peak (MW)</th>
+                            <th data-i18n="compare-drop">Reduction %</th>
+                            <th data-i18n="compare-energy-loss">Energy Loss (MWh)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="compare-tbody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Hourly impact table -->
+        <section class="panel">
+            <h3 class="panel-title" data-i18n="scenarios-table-title">Hourly Impact Breakdown</h3>
+            <div class="table-scroll">
+                <table class="data-table" id="scenario-table">
+                    <thead>
+                        <tr>
+                            <th data-i18n="col-hour">Hour</th>
+                            <th data-i18n="col-baseline">Baseline (MW)</th>
+                            <th data-i18n="col-scenario">Scenario (MW)</th>
+                            <th data-i18n="col-delta">Δ (MW)</th>
+                            <th data-i18n="col-pct">Change %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scenario-tbody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Physics explanation -->
+        <section class="panel scenario-physics">
+            <h3 class="panel-title" data-i18n="scenarios-physics-title">How the Simulator Works</h3>
+            <div class="physics-grid">
+                <div class="physics-card">
+                    <h4 data-i18n="physics-irradiance-title">Irradiance & Clouds</h4>
+                    <p data-i18n="physics-irradiance-body">Cloud cover reduces GHI linearly: at 100% overcast, only ~20% diffuse irradiance reaches the panel. The slider applies a proportional scaling factor to the baseline P50 forecast.</p>
+                </div>
+                <div class="physics-card">
+                    <h4 data-i18n="physics-temp-title">Temperature Derating</h4>
+                    <p data-i18n="physics-temp-body">Crystalline silicon PV modules lose ~0.4% efficiency per °C above the 25°C STC reference. A +15°C heat wave reduces output by approximately 6%. The formula: P_adj = P × (1 - 0.004 × max(0, T_offset)).</p>
+                </div>
+                <div class="physics-card">
+                    <h4 data-i18n="physics-soiling-title">Soiling & Dust</h4>
+                    <p data-i18n="physics-soiling-body">Saharan dust storms can deposit thick layers reducing transmittance by 40-60%. The soiling slider applies a direct multiplicative loss: P_adj = P × (1 - soiling_fraction).</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23.16.8/dist/umd/i18next.min.js"></script>
+    <script src="assets/js/app.js"></script>
+</body>
+</html>

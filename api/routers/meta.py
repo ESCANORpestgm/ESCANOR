@@ -3,7 +3,8 @@
 import pandas as pd
 from fastapi import APIRouter
 
-from api.core import DISTRICT_CAPACITY_LOOKUP, _state
+from api.config import DISTRICT_CAPACITY_LOOKUP
+from api.services import _state
 from data.steg_districts import AVG_UNIT_KWC, DIRECTIONS, STEG_DISTRICTS, project_capacity
 
 router = APIRouter(tags=["Meta"])
@@ -12,7 +13,7 @@ router = APIRouter(tags=["Meta"])
 @router.get("/")
 def root():
     return {
-        "service": "STEG PréSol PV Forecast Platform",
+        "service": "STEG ESCANOR PV Forecast Platform",
         "version": "2.0.0",
         "status": "ok",
         "endpoints": [

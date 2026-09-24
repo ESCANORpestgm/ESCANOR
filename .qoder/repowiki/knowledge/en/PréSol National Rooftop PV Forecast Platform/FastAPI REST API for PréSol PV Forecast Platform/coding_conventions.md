@@ -1,0 +1,5 @@
+- Each domain endpoint lives in its own `routers/<domain>.py` file exporting an `APIRouter` instance that is included from `main.py`.
+- Endpoints return plain Python dicts/lists or pandas `.to_dict(orient='records')` rather than Pydantic models, and timestamp columns are coerced to strings before serialization.
+- Read-only shared state (models, cache, lookups) is accessed through functions in `api.core` that lazily initialize and memoize values behind a `threading.Lock`.
+- Write or privileged operations (e.g. `/forecast/refresh`, retrain endpoints) gate access by requiring the `X-API-Key` header via the `Security(require_api_key)` dependency.
+- Missing or invalid resources are reported by raising `fastapi.HTTPException` with explicit status codes and human-readable detail messages listing allowed options.

@@ -1,4 +1,13 @@
-# STEG Rooftop PV Forecast Platform — Context
+graph LR
+    A[Synthetic / PVGIS Data] --> B["train_quantile_models()"]
+    B --> C["3× LGBMRegressor (P10/P50/P90)"]
+    C --> D["predict() + quantile sort"]
+    D --> E["aggregation sqrt-sum-squares"]
+    E --> F[Dashboard]
+    G[check_drift_and_retrain] -->|80/20 split| B
+    G -->|MAE vs persistence| H{Drift > 15%?}
+    H -->|Yes| B
+    H -->|No| I[Skip]# STEG Rooftop PV Forecast Platform — Context
 
 **What it is:** A platform forecasting Tunisia's rooftop solar output (intra-day to D+3) with uncertainty, for STEG's National Dispatching. Built for PESTGM 7.0 Technical Challenge, Track 1 (IEEE ESPRIT × STEG). Preselection due Sept 24, 2026: GitHub repo + technical report (max 10 pages) + video demo. Final pitch Oct 3-4 if selected (top 10).
 

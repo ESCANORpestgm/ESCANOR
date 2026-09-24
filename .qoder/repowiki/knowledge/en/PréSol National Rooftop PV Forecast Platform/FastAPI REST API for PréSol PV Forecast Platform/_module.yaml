@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: api_server
+title: FastAPI REST API for PréSol PV Forecast Platform
+scope:
+    - api/
+source_files: []
+depends_on: []
+related_to:
+    - path: dashboard
+    - path: ml_models/retraining_jobs
