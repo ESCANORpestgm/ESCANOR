@@ -22,7 +22,6 @@ import pandas as pd
 
 from data.io import write_json_atomic
 from data.paths import (
-    CALIBRATION_PATH,
     MODEL_PATH,
     ROOFTOP_TRAINING_DATASET_PATH,
     VALIDATION_METRICS_PATH,
@@ -30,7 +29,6 @@ from data.paths import (
 )
 from data.steg_districts import DISTRICT_CAPACITY_LOOKUP, DISTRICT_DUST_LOOKUP
 from models.artifacts import load_models
-from models.calibration import load_calibration
 from models.inference import (
     FORECAST_P10_COLUMN,
     FORECAST_P50_COLUMN,
@@ -51,11 +49,8 @@ def _column_for(quantile: float) -> str:
     return {0.1: FORECAST_P10_COLUMN, 0.5: FORECAST_P50_COLUMN, 0.9: FORECAST_P90_COLUMN}[quantile]
 
 
-def _split_metrics(models: dict[str, Any], frame: pd.DataFrame,
-                    conformal_q: float = 0.0,
-                    horizon_scales: dict | None = None) -> dict[str, Any]:
-    predictions = predict(models, frame, DISTRICT_CAPACITY_LOOKUP, DISTRICT_DUST_LOOKUP,
-                          conformal_q=conformal_q, horizon_scales=horizon_scales)
+def _split_metrics(models: dict[str, Any], frame: pd.DataFrame) -> dict[str, Any]:
+    predictions = predict(models, frame, DISTRICT_CAPACITY_LOOKUP, DISTRICT_DUST_LOOKUP)
     actual = predictions["production_mw"].to_numpy(dtype=float)
     quantile_losses = []
     for quantile in REPORT_QUANTILES:
@@ -91,17 +86,13 @@ def build_validation_report() -> dict[str, Any]:
     train = cast(pd.DataFrame, frame[frame["timestamp"] < split])
     validation = cast(pd.DataFrame, frame[frame["timestamp"] >= split])
     models = load_models(MODEL_PATH)
-    calibration = load_calibration(CALIBRATION_PATH)
-    conformal_q = calibration.get("conformal_q", 0.0)
-    horizon_scales = calibration.get("horizon_scales")
     return {
         "source": "pvgis_district_model",
         "dataset_path": relative_to_project(ROOFTOP_TRAINING_DATASET_PATH),
         "model_path": relative_to_project(MODEL_PATH),
         "split_timestamp": str(split),
-        "conformal_q": round(conformal_q, 4),
-        "training": _split_metrics(models, train, conformal_q, horizon_scales),
-        "validation": _split_metrics(models, validation, conformal_q, horizon_scales),
+        "training": _split_metrics(models, train),
+        "validation": _split_metrics(models, validation),
     }
 
 

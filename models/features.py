@@ -3,7 +3,7 @@ are derived from a weather/production frame.
 
 The encodings here are *fitted into the persisted model artifacts*, so they are
 deliberately frozen: changing a formula silently invalidates every saved model
-and the calibration computed against it. Anything that adjusts this module must
+trained against it. Anything that adjusts this module must
 be followed by a full retrain.
 
 Note that the dataset generators in ``data/`` use a slightly different (finer)

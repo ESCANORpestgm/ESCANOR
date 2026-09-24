@@ -55,43 +55,6 @@
             <div class="learning-cadence-card warning"><strong data-i18n="current-source">Current source</strong><span data-i18n="pvgis-modeled">PVGIS modeled data</span></div>
         </section>
 
-        <!-- Calibration & Uncertainty -->
-        <section class="panel collapsible" data-collapse-id="calibration">
-            <h3 class="panel-title panel-head">Calibration &amp; Uncertainty Engine <span class="title-badge">CONFORMAL</span></h3>
-            <div class="panel-body">
-            <p id="calibration-meta" class="text-muted" style="margin-bottom:1rem;">Loading calibration data…</p>
-            <div class="training-info-grid">
-                <!-- Calibration KPIs -->
-                <div class="training-info-card">
-                    <h4 class="training-info-card-title">Conformal Prediction</h4>
-                    <div id="conformal-kpis" class="training-kpi-grid">
-                        <div class="training-kpi">
-                            <span class="training-kpi-value" id="conformal-q-value">—</span>
-                            <span class="training-kpi-label">q̂ correction (MW)</span>
-                        </div>
-                        <div class="training-kpi">
-                            <span class="training-kpi-value" id="calibration-status-badge">—</span>
-                            <span class="training-kpi-label">Status</span>
-                        </div>
-                    </div>
-                    <p class="text-muted" style="font-size:0.78rem;margin-top:0.5rem;">
-                        Split-conformal calibration (Lei et al. 2018). q̂ is added to the P10–P90 half-width to achieve target 80% coverage.
-                    </p>
-                </div>
-                <!-- Horizon Scales -->
-                <div class="training-info-card">
-                    <h4 class="training-info-card-title">Horizon-Dependent Band Scaling</h4>
-                    <div id="horizon-scales-grid" class="horizon-scales-grid">
-                        <div class="text-muted">Loading…</div>
-                    </div>
-                    <p class="text-muted" style="font-size:0.78rem;margin-top:0.5rem;">
-                        Per-horizon correction factors computed from calibration residuals. Values &gt; 1.0 widen the uncertainty band for longer lead times.
-                    </p>
-                </div>
-            </div>
-            </div>
-        </section>
-
         <!-- Feature Importance -->
         <section class="panel">
             <h3 class="panel-title">Feature Importance <span class="title-badge">P50 ENSEMBLE</span></h3>

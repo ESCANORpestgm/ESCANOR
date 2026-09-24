@@ -52,16 +52,14 @@ def predict(
     df: pd.DataFrame,
     capacity_lookup: dict,
     dust_lookup: dict | None = None,
-    conformal_q: float = 0.0,
-    horizon_scales: dict | None = None,
 ) -> pd.DataFrame:
     """Return df with forecast_p10/p50/p90_mw columns added.
 
-    Uses symmetric band construction (p50 ± half_width) to eliminate quantile
-    crossing. ``conformal_q`` and ``horizon_scales`` are accepted for call-site
-    compatibility with the calibration artefacts, but are deliberately *not*
-    applied: as MW-based multipliers they inflate the band at low P50 and made
-    the reported uncertainty inversely proportional to output.
+    Uses the model's *native* quantile spread only: the P10–P90 band is built
+    symmetrically around P50 (``p50 ± half_width``) from the raw quantile models
+    to eliminate quantile crossing. No conformal or horizon-scaled correction is
+    applied — the deployed uncertainty is exactly what the quantile ensemble
+    predicts.
     """
     feat_df = add_time_features(df, capacity_lookup, dust_lookup)
     out = df.copy()

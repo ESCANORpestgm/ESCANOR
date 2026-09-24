@@ -8,8 +8,7 @@ import numpy as np
 import pandas as pd
 from fastapi import APIRouter, HTTPException
 
-from api.config import CALIBRATION_PATH, MODEL_PATH
-from api.services import get_calibration
+from api.config import MODEL_PATH
 from data.paths import (
     DAILY_HISTORY_PATH,
     NATIONAL_HISTORY_PATH,
@@ -126,10 +125,7 @@ def training_progression():
 
 @router.get("/model/training-info")
 def model_training_info():
-    """Return calibration data, feature importances, and training metadata."""
-    # ── Calibration ─────────────────────────────────────────────────────────
-    calibration = get_calibration()
-
+    """Return feature importances and training metadata for the deployed model."""
     # ── Feature importances (averaged across ensemble P50 models) ───────────
     feature_importance: list[dict[str, Any]] = []
     model_info: dict[str, Any] = {
@@ -167,12 +163,6 @@ def model_training_info():
         model_info["model_exists"] = False
 
     return {
-        "calibration": {
-            "conformal_q": round(calibration.get("conformal_q", 0.0), 4),
-            "horizon_scales": calibration.get("horizon_scales", {}),
-            "calibration_file": relative_to_project(CALIBRATION_PATH),
-            "exists": CALIBRATION_PATH.exists(),
-        },
         "feature_importance": feature_importance,
         "model_info": model_info,
     }

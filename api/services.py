@@ -12,7 +12,6 @@ from typing import Any, cast
 import pandas as pd
 
 from api.config import (
-    CALIBRATION_PATH,
     CAPACITY_LOOKUP,
     DUST_LOOKUP,
     METER_BUFFER,
@@ -22,7 +21,6 @@ from data.steg_districts import STEG_DISTRICTS
 from ingestion import weather_client
 from ingestion.synthetic_data import generate_all
 from models.artifacts import load_models
-from models.calibration import load_calibration
 from models.ml_forecast import predict
 from reports.prosol_history_db import import_generated_snapshots
 
@@ -36,17 +34,9 @@ _state: dict[str, Any] = {
     "refresh_lock": threading.Lock(),
     "capacity_lookup": CAPACITY_LOOKUP,
     "dust_lookup": DUST_LOOKUP,
-    "calibration": None,
 }
 
 # ── Lazy loaders ────────────────────────────────────────────────────────────
-
-
-def get_calibration() -> dict:
-    """Cached conformal calibration of the production artifact."""
-    if _state["calibration"] is None:
-        _state["calibration"] = load_calibration(CALIBRATION_PATH)
-    return _state["calibration"]
 
 
 def get_models() -> dict:
@@ -84,11 +74,8 @@ def build_forecast(horizon_days: int = 3) -> pd.DataFrame:
             weather = weather[(weather.timestamp >= now) & (weather.timestamp <= now + pd.Timedelta(days=horizon_days))]
             _state["data_source"] = "synthetic"
 
-        calibration = get_calibration()
         forecast = predict(
             get_models(), cast(pd.DataFrame, weather), CAPACITY_LOOKUP, DUST_LOOKUP,
-            conformal_q=calibration.get("conformal_q", 0.0),
-            horizon_scales=calibration.get("horizon_scales"),
         )
         _state["cache"] = forecast
         _state["cache_time"] = now

@@ -1,14 +1,12 @@
 """
 Continuous learning loop with temporal cross-validation, multi-baseline
-drift detection, data quality gating, and conformal uncertainty calibration.
+drift detection, and data quality gating.
 
 Workflow:
   1. Validate incoming data (remove outliers, night-with-production, etc.)
   2. Evaluate drift against persistence (24h + 168h) and climatology baselines
   3. If drift exceeds threshold, train candidate with temporal CV
-  4. Calibrate conformal uncertainty on the validation split
-  5. Promote candidate only if it outperforms current production
-  6. Save calibration artifacts alongside the model
+  4. Promote candidate only if it outperforms current production
 
 Run: python models/retrain.py
 """
@@ -27,7 +25,6 @@ import pandas as pd
 
 from data.io import append_dataframe
 from data.paths import (
-    CALIBRATION_PATH,
     MODEL_PATH,
     REGISTRY_ARTIFACTS_DIR,
     RETRAIN_LOG_PATH,
@@ -35,11 +32,6 @@ from data.paths import (
 from data.steg_districts import DISTRICT_CAPACITY_LOOKUP, DISTRICT_DUST_LOOKUP, STEG_DISTRICTS
 from ingestion.synthetic_data import generate_all
 from models.artifacts import load_models, save_models
-from models.calibration import (
-    calibrate_horizon_scales,
-    conformal_calibrate,
-    save_calibration,
-)
 from models.evaluation import evaluate
 from models.features import validate_training_data
 from models.inference import FORECAST_P50_COLUMN, predict
@@ -59,10 +51,8 @@ from models.training import train_quantile_models, tune_hyperparameters
 DRIFT_THRESHOLD_PCT = 15.0
 TEMPORAL_CV_FOLDS = 3       # expanding-window temporal cross-validation folds
 TEMPORAL_CV_RANGE = (0.5, 0.85)
-# Share of the history used for the final fit, and the slice reserved for
-# conformal calibration (between the two quantiles).
+# Share of the history used for the final fit.
 FINAL_TRAIN_FRACTION = 0.8
-CALIBRATION_FRACTION = 0.7
 VALIDATION_FRACTION = 0.8
 USE_TUNING = False          # set True to enable Optuna tuning during retrain
 TUNING_TRIALS = 15          # Optuna trials when USE_TUNING is True
@@ -75,14 +65,14 @@ SCHEMA_VERSION = "rooftop_pv_measurement_v2"
 # ── Retrain decision log ─────────────────────────────────────────────────────
 # The log is appended by several entry points (API upload, synthetic retrain,
 # ``python -m models.retrain``) whose result dicts carry different key sets, and
-# some values are nested (``baseline_maes``, ``horizon_scales``, ``tuned_params``).
+# some values are nested (``baseline_maes``, ``tuned_params``).
 # Appending those raw to a CSV whose header was frozen by the first write row
 # misaligns the columns and breaks every reader. Pin one canonical, flat schema
 # and JSON-encode nested values so each appended row always matches the header.
 RETRAIN_LOG_COLUMNS = (
     "timestamp", "source", "our_mae_mw", "baseline_maes", "best_baseline_mae_mw",
     "drift_ratio_pct", "retrained", "candidate_promoted", "promotion_reason",
-    "training_run_id", "candidate_model_version", "candidate_mae_mw", "conformal_q",
+    "training_run_id", "candidate_model_version", "candidate_mae_mw",
 )
 
 
@@ -277,18 +267,8 @@ def check_drift_and_retrain(recent_df: pd.DataFrame, capacity_lookup: dict,
         candidate_models, cv_metrics = _temporal_cv_train(
             recent_df, capacity_lookup, dust_lookup, params=params)
 
-        # Step 5: Conformal calibration on the 70-80% slice
-        cal_split = timestamps.quantile(CALIBRATION_FRACTION)
-        df_cal = cast(pd.DataFrame, recent_df[(timestamps >= cal_split) & (timestamps < cutoff)])
-        conformal_q = conformal_calibrate(candidate_models, df_cal, capacity_lookup, dust_lookup)
-        horizon_scales = calibrate_horizon_scales(candidate_models, df_cal, capacity_lookup, dust_lookup)
-        save_calibration({"conformal_q": conformal_q, "horizon_scales": horizon_scales}, CALIBRATION_PATH)
-
-        # Step 6: Evaluate candidate with conformal correction
-        candidate_metrics = evaluate(candidate_models, validation_df, capacity_lookup, dust_lookup,
-                                     conformal_q=conformal_q)
-        candidate_metrics["conformal_q"] = round(conformal_q, 4)
-        candidate_metrics["horizon_scales"] = horizon_scales
+        # Step 5: Evaluate candidate on the held-out validation window
+        candidate_metrics = evaluate(candidate_models, validation_df, capacity_lookup, dust_lookup)
         candidate_metrics["cv_avg_mae"] = cv_metrics.get("MAE_MW")
 
         candidate_path = REGISTRY_ARTIFACTS_DIR / f"candidate_{run_id}.joblib"
@@ -303,10 +283,9 @@ def check_drift_and_retrain(recent_df: pd.DataFrame, capacity_lookup: dict,
             "training_run_id": run_id,
             "candidate_model_version": model_version,
             "candidate_mae_mw": candidate_metrics.get("MAE_MW"),
-            "conformal_q": round(conformal_q, 4),
         })
 
-        # Step 7: Promote if better than current production (never on non-finite metrics)
+        # Step 6: Promote if better than current production (never on non-finite metrics)
         candidate_mae = candidate_metrics.get("MAE_MW")
         if candidate_mae is None or not np.isfinite(candidate_mae):
             status["promotion_reason"] = "Candidate validation metrics are non-finite; promotion blocked."

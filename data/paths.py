@@ -50,7 +50,6 @@ EXTRA_EVALUATION_ROOTS: tuple[Path, ...] = (PROJECT_ROOT / "evaluations",)
 # ── Individual artifacts ─────────────────────────────────────────────────────
 
 MODEL_PATH = PROJECT_ROOT / "models" / "artifacts" / "quantile_models.joblib"
-CALIBRATION_PATH = MODEL_ARTIFACTS_DIR / "calibration.json"
 TRAINING_METRICS_PATH = HISTORY_DIR / "metrics_by_horizon.csv"
 VALIDATION_METRICS_PATH = MODEL_ARTIFACTS_DIR / "model_validation_metrics.json"
 NATIONAL_HISTORY_PATH = HISTORY_DIR / "history_national.csv"
@@ -69,7 +68,6 @@ PROSOL_HTML_REPORT_PATH = REPORTS_DIR / "steg_prosol_mars_2026.html"
 # records persisted that flat path as a string. Both directions are described by
 # this single table: ``legacy → current``.
 LEGACY_RELOCATIONS: dict[str, str] = {
-    "calibration.json": "model_artifacts/calibration.json",
     "model_validation_metrics.json": "model_artifacts/model_validation_metrics.json",
     "model_registry": "model_artifacts/model_registry",
     "forecast_evaluations": "evaluations",
@@ -191,7 +189,6 @@ def relative_to_project(path: str | Path) -> str:
 
 
 __all__ = [
-    "CALIBRATION_PATH",
     "DAILY_HISTORY_PATH",
     "DATASETS_DIR",
     "EVALUATIONS_DIR",

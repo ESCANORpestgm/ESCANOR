@@ -25,7 +25,6 @@ import pandas as pd
 
 from data.io import read_json, write_dataframe
 from data.paths import (
-    CALIBRATION_PATH,
     DAILY_HISTORY_PATH,
     MODEL_PATH,
     NATIONAL_HISTORY_PATH,
@@ -38,7 +37,6 @@ from data.paths import (
 )
 from data.steg_districts import DISTRICT_CAPACITY_LOOKUP, DISTRICT_DUST_LOOKUP
 from models.artifacts import load_models
-from models.calibration import load_calibration
 from models.inference import (
     FORECAST_P10_COLUMN,
     FORECAST_P50_COLUMN,
@@ -81,11 +79,8 @@ def build_national_history(
     dataset = resample_hourly(_select_window(ROOFTOP_TRAINING_DATASET_PATH, start, days))
     model_frame = to_model_schema(dataset)
     models = load_models(MODEL_PATH)
-    calibration = load_calibration(CALIBRATION_PATH)
     predictions = cast(pd.DataFrame, predict(
         models, model_frame, DISTRICT_CAPACITY_LOOKUP, DISTRICT_DUST_LOOKUP,
-        conformal_q=calibration.get("conformal_q", 0.0),
-        horizon_scales=calibration.get("horizon_scales"),
     ))
 
     # ── Nighttime zeroing: when GHI ≈ 0, no solar production is possible ────

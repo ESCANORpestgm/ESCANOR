@@ -81,7 +81,6 @@ def _run_retrain(training_frame: pd.DataFrame, source_label: str = "") -> None:
         if result.get("retrained"):
             _state["models"] = None
             _state["cache_time"] = None
-            _state["calibration"] = None
         _write_retrain_state({"status": "completed", "finished_at": pd.Timestamp.now().isoformat(), "result": result})
         print(f"[retrain] {result}")
     except Exception as error:

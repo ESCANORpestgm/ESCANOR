@@ -1,6 +1,6 @@
 """
 ML forecasting model: gradient-boosted quantile regression with
-conformal calibration, ensemble averaging, and horizon-aware uncertainty.
+ensemble averaging and a native non-crossing uncertainty band.
 
 Trains P10/P50/P90 quantile models so the platform can report both a point
 forecast and an uncertainty band, as required by the concept note.
@@ -14,7 +14,6 @@ site (``from models.ml_forecast import predict``) keeps working:
   - ``models.artifacts``       — model bundle persistence
   - ``models.training``        — ensemble fit and the Optuna study
   - ``models.inference``       — quantile ensemble → non-crossing band
-  - ``models.calibration``     — conformal and per-horizon band scaling
   - ``models.evaluation``      — metrics and baseline backtests
 
 Model improvements over the original implementation:
@@ -25,10 +24,8 @@ Model improvements over the original implementation:
     central coastal, inland central, south) for spatial generalization.
   - Ensemble: 3 random seeds per quantile, averaged for variance reduction.
   - Non-crossing quantiles: symmetric band construction (p50 ± half_width)
-    eliminates P10/P50/P90 crossing entirely.
-  - Conformal prediction: split-conformal calibration for distribution-free
-    finite-sample coverage guarantees.
-  - Horizon-dependent band scaling: learned from calibration residuals.
+    eliminates P10/P50/P90 crossing entirely; the reported band is the model's
+    native quantile spread with no post-hoc correction.
   - Data quality gate: filters physically impossible rows before training.
   - Optuna hyperparameter tuning with temporal cross-validation.
   - Multi-baseline evaluation (persistence 24h/168h, clear-sky).
@@ -56,13 +53,6 @@ from data.steg_districts import (
 )
 from ingestion.synthetic_data import generate_all
 from models.artifacts import FEATURE_COLUMNS_KEY, load_models, save_models
-from models.calibration import (
-    MAX_HORIZON_SCALE,
-    calibrate_horizon_scales,
-    conformal_calibrate,
-    load_calibration,
-    save_calibration,
-)
 from models.evaluation import evaluate, evaluate_by_horizon_with_baselines
 from models.features import (
     BASE_FEATURES,
@@ -92,9 +82,8 @@ _maybe_gpu_params = device_params
 _raw_predict = raw_predict
 
 # Chronological split used by the standalone pipeline: everything before
-# ``TRAIN_END`` trains, the last window validates, the tail tests.
+# ``TRAIN_END`` trains, the tail tests.
 TRAIN_END = pd.Timestamp("2024-10-01")
-CALIBRATION_START = pd.Timestamp("2024-09-01")
 SYNTHETIC_TRAINING_START = "2023-01-01"
 SYNTHETIC_TRAINING_END = "2025-01-01"
 DEFAULT_TUNING_TRIALS = 20
@@ -103,8 +92,8 @@ DEFAULT_TUNING_TRIALS = 20
 def run_training_pipeline(output_model: Path | None = None, n_trials: int = DEFAULT_TUNING_TRIALS) -> dict:
     """End-to-end standalone training run on the synthetic district history.
 
-    Returns the fitted model bundle; calibration and metrics are written to the
-    locations declared in ``data.paths``.
+    Returns the fitted model bundle; metrics are written to the locations
+    declared in ``data.paths``.
     """
     print("Generating synthetic training data …")
     df = generate_all(STEG_DISTRICTS, start=SYNTHETIC_TRAINING_START, end=SYNTHETIC_TRAINING_END)
@@ -125,28 +114,17 @@ def run_training_pipeline(output_model: Path | None = None, n_trials: int = DEFA
     models = train_quantile_models(train, capacity_lookup, dust_lookup,
                                    params=best_params, use_ensemble=True)
 
-    print("Conformal calibration on validation split…")
-    df_cal = train[train.timestamp >= CALIBRATION_START]
-    conformal_q = conformal_calibrate(models, df_cal, capacity_lookup, dust_lookup)
-    print(f"Conformal correction q_hat = {conformal_q:.4f} MW")
-
-    print("Computing horizon-dependent band scales…")
-    horizon_scales = calibrate_horizon_scales(models, df_cal, capacity_lookup, dust_lookup)
-    print(f"Horizon scales: {horizon_scales}")
-
-    save_calibration({"conformal_q": conformal_q, "horizon_scales": horizon_scales})
-
     print("\nOverall backtest:")
-    print(evaluate(models, test, capacity_lookup, dust_lookup, conformal_q=conformal_q))
+    print(evaluate(models, test, capacity_lookup, dust_lookup))
 
     print("\nBy-horizon backtest (vs persistence 24h/168h & clear-sky):")
     horizon_metrics = evaluate_by_horizon_with_baselines(
-        models, test, capacity_lookup, dust_lookup, conformal_q=conformal_q)
+        models, test, capacity_lookup, dust_lookup)
     print(horizon_metrics.to_string(index=False))
 
     write_dataframe(horizon_metrics, paths.TRAINING_METRICS_PATH)
     save_models(models, output_model or paths.MODEL_PATH)
-    print("\nModels, calibration, and metrics saved.")
+    print("\nModels and metrics saved.")
     return models
 
 
@@ -173,23 +151,18 @@ __all__ = [
     "FEATURE_COLS",
     "FEATURE_COLUMNS_KEY",
     "GPU_PARAMS",
-    "MAX_HORIZON_SCALE",
     "PHYSICS_FEATURES",
     "QUANTILES",
     "USE_GPU",
     "ZONE_IDS",
     "add_time_features",
-    "calibrate_horizon_scales",
-    "conformal_calibrate",
     "evaluate",
     "evaluate_by_horizon_with_baselines",
     "get_feature_cols",
     "is_gpu_enabled",
-    "load_calibration",
     "load_models",
     "predict",
     "run_training_pipeline",
-    "save_calibration",
     "save_models",
     "train_quantile_models",
     "tune_hyperparameters",

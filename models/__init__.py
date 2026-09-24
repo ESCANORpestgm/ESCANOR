@@ -4,9 +4,8 @@ Layering (each module may import the ones above it, never below):
   - ``training_config`` — hyperparameters, quantiles, ensemble seeds, device.
   - ``features``        — the frozen model feature contract and derivations.
   - ``artifacts``       — joblib save/load of the fitted ensemble.
-  - ``inference``       — raw and calibrated prediction.
+  - ``inference``       — native-quantile (non-crossing) prediction.
   - ``training``        — quantile fitting and Optuna hyperparameter search.
-  - ``calibration``     — conformal and per-horizon band calibration.
   - ``evaluation``      — metrics, pinball loss, baseline backtests.
   - ``pvgis_dataset``   — hourly PVGIS dataset loading in model schema.
   - ``aggregation``     — district → Direction → national band aggregation.

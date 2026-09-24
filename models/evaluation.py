@@ -66,10 +66,9 @@ def evaluate(
     df_test: pd.DataFrame,
     capacity_lookup: dict,
     dust_lookup: dict | None = None,
-    conformal_q: float = 0.0,
 ) -> dict:
     """MAE, nRMSE, P10–P90 coverage and pinball loss on the forecast."""
-    preds = predict(models, df_test, capacity_lookup, dust_lookup, conformal_q=conformal_q)
+    preds = predict(models, df_test, capacity_lookup, dust_lookup)
     daylight = preds["production_mw"] > DAYLIGHT_MIN_PRODUCTION_MW
     errors = preds.loc[daylight, FORECAST_P50_COLUMN] - preds.loc[daylight, "production_mw"]
 
@@ -116,10 +115,9 @@ def evaluate_by_horizon_with_baselines(
     df_test: pd.DataFrame,
     capacity_lookup: dict,
     dust_lookup: dict | None = None,
-    conformal_q: float = 0.0,
 ) -> pd.DataFrame:
     """Backtest by forecast lead-time bucket vs persistence (24h + 168h) and clear-sky."""
-    preds = predict(models, df_test, capacity_lookup, dust_lookup, conformal_q=conformal_q)
+    preds = predict(models, df_test, capacity_lookup, dust_lookup)
     feat_df = add_time_features(df_test, capacity_lookup, dust_lookup)
     preds["horizon_bucket"] = horizon_bucket_label(feat_df["horizon_hours"].values)
 

@@ -195,13 +195,10 @@ async function initPerformance() {
         const trainingInfoRes = await fetch(`${API_BASE}/model/training-info?_=${Date.now()}`, { cache: 'no-store' });
         if (trainingInfoRes.ok) {
             const trainingInfo = await trainingInfoRes.json();
-            _renderCalibrationPanel(trainingInfo.calibration);
             _renderFeatureImportanceChart(trainingInfo.feature_importance, trainingInfo.model_info);
         }
     } catch (e) {
         console.error('Training info error', e);
-        const calMeta = document.getElementById('calibration-meta');
-        if (calMeta) calMeta.textContent = 'Could not load calibration data.';
     }
 
     // Training loss and validation accuracy
@@ -443,7 +440,6 @@ async function initPerformance() {
                 if (ev.candidate_mae_mw != null) detailHtml += `<span class="retrain-detail-label">Candidate MAE</span><span class="retrain-detail-value mono text-good">${Number(ev.candidate_mae_mw).toFixed(2)} MW</span>`;
                 detailHtml += `<span class="retrain-detail-label">Best Baseline</span><span class="retrain-detail-value mono">${ev.best_baseline_mae_mw != null ? Number(ev.best_baseline_mae_mw).toFixed(2) : (ev.persistence_mae_mw != null ? Number(ev.persistence_mae_mw).toFixed(2) : '—')} MW</span>`;
                 detailHtml += `<span class="retrain-detail-label">Drift Ratio</span><span class="retrain-detail-value mono${ev.drift_ratio_pct > 85 ? ' text-warn' : ''}">${ev.drift_ratio_pct != null ? Number(ev.drift_ratio_pct).toFixed(1) + '%' : '—'}</span>`;
-                if (ev.conformal_q != null) detailHtml += `<span class="retrain-detail-label">Conformal q̂</span><span class="retrain-detail-value mono">${Number(ev.conformal_q).toFixed(4)} MW</span>`;
                 if (ev.candidate_model_version) detailHtml += `<span class="retrain-detail-label">Model Version</span><span class="retrain-detail-value mono">${ev.candidate_model_version}</span>`;
                 detailHtml += `</div>`;
                 if (hasBaselines) {
@@ -639,61 +635,6 @@ async function initPerformance() {
                 setRetrainBusy(synthBtn, false);
             }
         });
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// CALIBRATION PANEL
-// ═══════════════════════════════════════════════════════════════════════════
-function _renderCalibrationPanel(calibration) {
-    const metaEl = document.getElementById('calibration-meta');
-    const qEl = document.getElementById('conformal-q-value');
-    const statusEl = document.getElementById('calibration-status-badge');
-    const horizonGrid = document.getElementById('horizon-scales-grid');
-
-    if (!calibration) {
-        if (metaEl) metaEl.textContent = 'No calibration data available. Run `python models/ml_forecast.py` to generate.';
-        return;
-    }
-
-    const q = calibration.conformal_q || 0;
-    const exists = calibration.exists;
-
-    if (metaEl) {
-        metaEl.textContent = exists
-            ? `Source: ${calibration.calibration_file} · Conformal q̂ = ${q.toFixed(4)} MW`
-            : 'Calibration file not found. Run the training pipeline to generate.';
-    }
-
-    if (qEl) qEl.textContent = q.toFixed(4);
-    if (statusEl) {
-        if (exists && q > 0) {
-            statusEl.textContent = 'Active';
-            statusEl.className = 'training-kpi-value text-good';
-        } else if (exists) {
-            statusEl.textContent = 'Calibrated (q=0)';
-            statusEl.className = 'training-kpi-value text-muted';
-        } else {
-            statusEl.textContent = 'Missing';
-            statusEl.className = 'training-kpi-value text-bad';
-        }
-    }
-
-    if (horizonGrid) {
-        const scales = calibration.horizon_scales || {};
-        const entries = Object.entries(scales);
-        if (entries.length === 0) {
-            horizonGrid.innerHTML = '<div class="text-muted">No horizon scales computed yet.</div>';
-        } else {
-            horizonGrid.innerHTML = entries.map(([bucket, scale]) => {
-                const color = scale > 1.5 ? 'var(--status-warn)' : scale > 1.0 ? 'var(--accent-primary)' : 'var(--status-good)';
-                return `<div class="horizon-scale-chip">
-                    <span class="horizon-scale-bucket">${bucket}</span>
-                    <span class="horizon-scale-value" style="color:${color}">${Number(scale).toFixed(3)}x</span>
-                    <div class="horizon-scale-bar"><div class="horizon-scale-bar-fill" style="width:${Math.min(100, Number(scale) * 50)}%;background:${color}"></div></div>
-                </div>`;
-            }).join('');
-        }
     }
 }
 
