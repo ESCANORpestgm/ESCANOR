@@ -20,3 +20,4 @@ reports/generated/
 # Markdown docs
 *.md
 
+.results_backup/

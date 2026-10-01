@@ -19,6 +19,7 @@ from api.config import (
     require_api_key,
 )
 from api.services import _state
+from db import record_metering_observations
 from data.io import append_dataframe, write_json_atomic
 from data.paths import relative_to_project
 from models.model_registry import (
@@ -92,13 +93,28 @@ def _run_retrain(training_frame: pd.DataFrame, source_label: str = "") -> None:
 def metering_push(rows: list[MeteringRow], _key: str = Security(require_api_key)):
     new_frame = pd.DataFrame([row.model_dump() for row in rows])
     new_frame["received_at"] = pd.Timestamp.now().isoformat()
+
+    # The relational store is the system of record; the CSV buffer is still
+    # appended because ``compute_bias_correction`` reads its last-3-hours window
+    # straight from that file.
+    stored_in_database = True
+    try:
+        record_metering_observations(new_frame.to_dict(orient="records"))
+    except Exception as error:  # noqa: BLE001 - keep accepting the feed
+        stored_in_database = False
+        print(f"[metering] database write failed, buffered to CSV only: {error}")
+
     append_dataframe(new_frame, METER_BUFFER)
     buffer = pd.read_csv(METER_BUFFER, parse_dates=["timestamp"])
     return {
         "accepted": len(rows),
         "buffer_days": int(buffer["timestamp"].dt.date.nunique()),  # type: ignore[arg-type]
+        "stored_in_database": stored_in_database,
         "retrain_triggered": False,
-        "message": "Legacy metering rows were stored; import a validated rooftop snapshot before retraining.",
+        "message": (
+            "Metering rows stored in the relational store and the retraining buffer; "
+            "import a validated rooftop snapshot before retraining."
+        ),
     }
 
 

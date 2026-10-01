@@ -17,6 +17,7 @@ from api.config import (
     METER_BUFFER,
     MODEL_PATH,
 )
+from db import init_db
 from data.steg_districts import STEG_DISTRICTS
 from ingestion import weather_client
 from ingestion.synthetic_data import generate_all
@@ -136,7 +137,12 @@ def scheduled_retrain() -> None:
 
 @asynccontextmanager
 async def lifespan(app: Any):
-    """FastAPI lifespan hook: import snapshots, start background scheduler."""
+    """FastAPI lifespan hook: prepare the relational store, import snapshots, start scheduler."""
+    try:
+        init_db()
+    except Exception as error:
+        print(f"[db] relational store unavailable, metering/retrain writes fall back to files: {error}")
+
     try:
         import_generated_snapshots()
     except Exception as error:

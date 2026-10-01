@@ -23,7 +23,20 @@ from pathlib import Path
 
 # ── Roots ────────────────────────────────────────────────────────────────────
 
-PROJECT_ROOT = Path(os.environ.get("PRESOL_ROOT", Path(__file__).resolve().parents[1])).resolve()
+_DEFAULT_ROOT = Path(__file__).resolve().parents[1]
+
+# ``python-dotenv`` is a declared dependency and the project's intended
+# configuration channel, but this module is the lowest layer of the platform and
+# is imported by offline tooling too — a missing optional dependency must never
+# turn into an ImportError there.
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(_DEFAULT_ROOT / ".env")
+except ImportError:  # pragma: no cover - dotenv absent in a stripped deployment
+    pass
+
+PROJECT_ROOT = Path(os.environ.get("PRESOL_ROOT", _DEFAULT_ROOT)).resolve()
 RESULTS_ROOT = Path(os.environ.get("PRESOL_RESULTS_DIR", PROJECT_ROOT / "results")).resolve()
 
 # ── Artifact categories ──────────────────────────────────────────────────────
@@ -59,9 +72,31 @@ RETRAIN_LOG_PATH = HISTORY_DIR / "retrain_log.csv"
 RETRAIN_STATE_PATH = HISTORY_DIR / "retrain_state.json"
 METER_BUFFER_PATH = MEASUREMENTS_DIR / "metering_buffer.csv"
 ROOFTOP_TRAINING_DATASET_PATH = DATASETS_DIR / "rooftop_actual_15min.csv"
-PROSOL_HISTORY_DB_PATH = PROSOL_DIR / "prosol_history.db"
+# Prosol snapshots moved into the relational store; PROSOL_DIR now holds only
+# the manual dashboard entries, which are an append-only journal, not a database.
 PROSOL_UPDATES_PATH = PROSOL_DIR / "installation_updates.jsonl"
 PROSOL_HTML_REPORT_PATH = REPORTS_DIR / "steg_prosol_mars_2026.html"
+
+# ── Relational store ─────────────────────────────────────────────────────────
+
+# System of record for the transactional data — metering observations and
+# retraining decisions. It sits at the ``results/`` root rather than under
+# ``prosol/`` because it is platform-wide, not Prosol-report specific.
+DATABASE_PATH = RESULTS_ROOT / "escanor.db"
+
+
+def database_url() -> str:
+    """SQLAlchemy URL for the relational store.
+
+    ``DATABASE_URL`` wins so a deployment can point the same code at PostgreSQL
+    without a change; the default is a file-backed SQLite database, which keeps
+    the platform runnable with no infrastructure to provision.
+    """
+    override = os.environ.get("DATABASE_URL", "").strip()
+    if override:
+        return override
+    DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    return f"sqlite:///{DATABASE_PATH.as_posix()}"
 
 # ── ``results/`` layout reorganisation ───────────────────────────────────────
 # Artifacts produced before the categorisation carry their flat path, and JSON
@@ -190,6 +225,7 @@ def relative_to_project(path: str | Path) -> str:
 
 __all__ = [
     "DAILY_HISTORY_PATH",
+    "DATABASE_PATH",
     "DATASETS_DIR",
     "EVALUATIONS_DIR",
     "EXTRA_EVALUATION_ROOTS",
@@ -203,7 +239,6 @@ __all__ = [
     "NATIONAL_HISTORY_PATH",
     "PROSOL_DIR",
     "PROSOL_HTML_REPORT_PATH",
-    "PROSOL_HISTORY_DB_PATH",
     "PROSOL_SNAPSHOT_DIR",
     "PROSOL_UPDATES_PATH",
     "PROJECT_ROOT",
@@ -219,6 +254,7 @@ __all__ = [
     "TRAINING_PROGRESSION_PATH",
     "VALIDATION_METRICS_PATH",
     "exists",
+    "database_url",
     "relative_to_project",
     "resolve",
     "resolve_artifact",

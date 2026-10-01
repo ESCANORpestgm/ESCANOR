@@ -69,6 +69,15 @@ def predict(
     p10_raw = raw.get(P10, p50 * P10_MISSING_RATIO)
     p90_raw = raw.get(P90, p50 * P90_MISSING_RATIO)
 
+    # ``add_time_features`` sorts its copy by (governorate, timestamp), so the
+    # position-based arrays coming back from the models are in *sorted* order
+    # while ``out`` still holds the caller's row order. Attaching the raw arrays
+    # would pair each forecast with an arbitrary weather row; re-key them to the
+    # feature frame's (preserved) index and realign to the output rows instead.
+    p50 = pd.Series(p50, index=feat_df.index).reindex(out.index).to_numpy()
+    p10_raw = pd.Series(p10_raw, index=feat_df.index).reindex(out.index).to_numpy()
+    p90_raw = pd.Series(p90_raw, index=feat_df.index).reindex(out.index).to_numpy()
+
     half_width = np.clip((p90_raw - p10_raw) / 2.0, MIN_HALF_WIDTH_MW, None)
 
     # Safety cap: the band may not exceed the forecast value (P10 can't go below

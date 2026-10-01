@@ -8,6 +8,10 @@ async function initPerformance() {
         plugins: {
             ..._chartDefaults.plugins,
             legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
+            tooltip: {
+                ..._chartDefaults.plugins.tooltip,
+                callbacks: { label: (item) => `${item.dataset.label}: ${Number(item.parsed.y).toFixed(2)} MW` },
+            },
         },
         scales: {
             x: {
@@ -21,6 +25,7 @@ async function initPerformance() {
                     },
                 },
             },
+            y: { title: { display: true, text: 'National power (MW)' } },
         },
     });
 
@@ -32,6 +37,10 @@ async function initPerformance() {
             const first = new Date(data[0].timestamp).toLocaleDateString();
             const last = new Date(data[data.length - 1].timestamp).toLocaleDateString();
             historyMeta.textContent = `${data.length} hourly national rows · ${first} – ${last} · Source: ${data[0].source || 'legacy history'}${data[0].dataset_path ? ` · ${data[0].dataset_path}` : ''}`;
+            const windowBadge = document.getElementById('history-window');
+            if (windowBadge) {
+                windowBadge.textContent = `${first.toUpperCase()} – ${last.toUpperCase()}`;
+            }
         }
         const labels = [], actual = [], p50 = [], p10 = [], p90 = [];
         data.forEach(row => {
@@ -113,10 +122,21 @@ async function initPerformance() {
                 plugins: {
                     ..._chartDefaults.plugins,
                     legend: { display: true, position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } },
+                    tooltip: {
+                        ..._chartDefaults.plugins.tooltip,
+                        callbacks: {
+                            label: (item) => {
+                                const value = Number(item.parsed.y);
+                                return item.dataset.label.includes('Coverage')
+                                    ? `${item.dataset.label}: ${value.toFixed(1)}%`
+                                    : `${item.dataset.label}: ${value.toFixed(2)} MW`;
+                            },
+                        },
+                    },
                 },
                 scales: {
                     x: { ticks: { autoSkip: true, maxTicksLimit: 15, maxRotation: 0 } },
-                    y: { beginAtZero: true },
+                    y: { beginAtZero: true, ticks: { callback: v => `${v} MW` } },
                 },
             };
             new Chart(document.getElementById('dailyErrorChart'), {
@@ -183,7 +203,7 @@ async function initPerformance() {
                     scales: {
                         x: simpleLineOpts.scales.x,
                         y: { beginAtZero: true, max: 100, position: 'left', ticks: { callback: v => `${v}%` }, title: { display: true, text: 'Coverage' } },
-                        y1: { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Bias (MW)' } },
+                        y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => `${v} MW` }, title: { display: true, text: 'Bias (MW)' } },
                     },
                 },
             });
@@ -689,6 +709,10 @@ function _renderFeatureImportanceChart(featureImportance, modelInfo) {
     });
 
     const ctx = canvas.getContext('2d');
+    // Give each feature a readable row (~28px) so no tick label is dropped.
+    const wrapper = canvas.closest('.chart-wrapper');
+    if (wrapper) wrapper.style.height = `${Math.max(320, features.length * 28)}px`;
+
     new Chart(ctx, {
         type: 'bar',
         data: {
@@ -704,6 +728,10 @@ function _renderFeatureImportanceChart(featureImportance, modelInfo) {
         options: {
             ..._chartDefaults,
             indexAxis: 'y',
+            // _chartDefaults targets vertical charts, where index lookups resolve along x.
+            // This chart is horizontal, so all bars share the same x origin and an x-based
+            // lookup highlights the wrong row; resolve the hovered feature on the category axis.
+            interaction: { mode: 'index', axis: 'y', intersect: false },
             plugins: {
                 ..._chartDefaults.plugins,
                 legend: { display: false },
@@ -722,7 +750,13 @@ function _renderFeatureImportanceChart(featureImportance, modelInfo) {
                 },
                 y: {
                     grid: { display: false },
-                    ticks: { font: { family: "'JetBrains Mono', monospace", size: 11 } },
+                    // One label per bar: with 19 features Chart.js would otherwise
+                    // skip ticks and misalign labels against their bars.
+                    ticks: {
+                        autoSkip: false,
+                        maxRotation: 0,
+                        font: { family: "'JetBrains Mono', monospace", size: 11 },
+                    },
                 },
             },
         },

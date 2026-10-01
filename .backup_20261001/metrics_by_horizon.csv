@@ -1,0 +1,6 @@
+horizon,nRMSE_ours_%,nRMSE_persistence_24h_%,nRMSE_persistence_168h_%,nRMSE_clearsky_%,coverage_P10_P90_%,n_samples
+nowcast,0.58,0.16,0.16,0.45,12.0,675
++6h,0.6,0.17,0.17,0.48,10.5,2965
+J+1,0.58,0.16,0.16,0.46,10.8,14565
+J+2,0.59,0.16,0.16,0.48,12.9,14479
+J+3,0.6,0.17,0.16,0.47,14.5,14428

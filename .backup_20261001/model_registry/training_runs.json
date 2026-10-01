@@ -1,0 +1,15 @@
+[
+  {
+    "training_run_id": "training_20261001T114255Z_81e7e771",
+    "status": "completed",
+    "started_at": "2026-10-01T11:42:55.230547+00:00",
+    "data_start": null,
+    "data_end": null,
+    "feature_version": "legacy",
+    "schema_version": "legacy",
+    "source": "existing production artifact",
+    "finished_at": "2026-10-01T11:42:55.234378+00:00",
+    "model_version": "model_20261001T114255Z_a41cae7a",
+    "metrics": {}
+  }
+]

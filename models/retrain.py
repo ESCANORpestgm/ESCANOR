@@ -90,8 +90,21 @@ def normalize_retrain_row(result: dict) -> dict:
 
 
 def append_retrain_log(result: dict, log_path: Path = RETRAIN_LOG_PATH) -> None:
-    """Append one normalised retrain decision, creating a canonical header if needed."""
+    """Append one normalised retrain decision, creating a canonical header if needed.
+
+    The CSV stays the durable artifact that the diagnostics page already reads,
+    and the same decision is mirrored into the relational store so it can be
+    queried alongside metering. The database write is best-effort: an offline
+    run or an unreachable server must not lose the CSV log that was just
+    written, so a failure is reported rather than raised.
+    """
     append_dataframe(pd.DataFrame([normalize_retrain_row(result)], columns=list(RETRAIN_LOG_COLUMNS)), log_path)
+    try:
+        from db import record_retraining_event
+
+        record_retraining_event(result)
+    except Exception as error:  # noqa: BLE001 - CSV log already persisted
+        print(f"[retrain] could not record retraining event in the database: {error}")
 
 
 def read_retrain_log(log_path: Path = RETRAIN_LOG_PATH) -> pd.DataFrame:

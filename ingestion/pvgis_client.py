@@ -31,6 +31,10 @@ from ingestion.settings import (
 # Columns of the district-level frame produced below.
 POWER_KW = "power_kw"
 PV_COMPONENT_COLUMNS = (POWER_KW, GHI_WM2, DNI_WM2, DHI_WM2, TEMP_C, WIND_SPEED_MS)
+# PVGIS hourly "P" is in W (hourly energy in W·h ≡ mean power in W), while the
+# platform's contract is kW — without this divisor every daylight row saturates
+# at nameplate capacity after the clip below.
+W_PER_KW = 1000.0
 
 
 def fetch_historical_pv_profile(
@@ -126,7 +130,7 @@ def fetch_district_hourly(
     frame = pd.DataFrame(
         {
             TIMESTAMP_UTC: timestamp,
-            POWER_KW: pd.to_numeric(hourly["P"], errors="coerce"),
+            POWER_KW: pd.to_numeric(hourly["P"], errors="coerce") / W_PER_KW,
             GHI_WM2: beam + diffuse + reflected,
             DNI_WM2: beam,
             DHI_WM2: diffuse,

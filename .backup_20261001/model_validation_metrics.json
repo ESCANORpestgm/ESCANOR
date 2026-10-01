@@ -1,0 +1,24 @@
+{
+  "source": "pvgis_district_model",
+  "dataset_path": "results/datasets/rooftop_actual_15min.csv",
+  "model_path": "models/artifacts/quantile_models.joblib",
+  "split_timestamp": "2020-10-19 19:00:00",
+  "training": {
+    "pinball_loss": 2.3445,
+    "mae_mw": 7.3824,
+    "rmse_mw": 10.0461,
+    "nrmse_pct": 2.2045,
+    "accuracy_pct": 97.7955,
+    "coverage_pct": 25.4185,
+    "samples": 351350
+  },
+  "validation": {
+    "pinball_loss": 1.9906,
+    "mae_mw": 7.4595,
+    "rmse_mw": 10.1387,
+    "nrmse_pct": 2.2249,
+    "accuracy_pct": 97.7751,
+    "coverage_pct": 34.7001,
+    "samples": 87850
+  }
+}

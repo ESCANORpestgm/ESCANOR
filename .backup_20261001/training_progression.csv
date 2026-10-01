@@ -1,0 +1,2 @@
+step,run_id,model_version,status,source,feature_version,data_start,data_end,finished_at,mae_mw,nrmse_pct,coverage_pct,promoted,drift_ratio_pct,val_mae_mw,train_mae_mw,val_coverage_pct,train_coverage_pct
+1,training_20261001T114255Z_81e7e771,model_20261001T114255Z_a41cae7a,completed,existing production artifact,legacy,,,2026-10-01T11:42:55.234378+00:00,7.4595,2.2249,34.7001,False,,7.4595,7.3824,34.7001,25.4185

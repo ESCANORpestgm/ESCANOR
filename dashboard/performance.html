@@ -59,6 +59,7 @@
         <section class="panel">
             <h3 class="panel-title">Feature Importance <span class="title-badge">P50 ENSEMBLE</span></h3>
             <p id="feature-importance-meta" class="text-muted" style="margin-bottom:0.75rem;">Loading feature importances…</p>
+            <p class="text-muted chart-explain">How to read: each bar is the share of the median forecast's split decisions driven by that input. Irradiance terms (<code>ghi/dhi/dni_wm2</code>) should dominate, then time/season encodings and temperature. If structural inputs like <code>capacity_mwc</code> outrank irradiance, the model is memorizing fleet size instead of weather.</p>
             <div class="chart-wrapper" style="height:320px;">
                 <canvas id="featureImportanceChart"></canvas>
             </div>
@@ -68,9 +69,9 @@
         <!-- Historical Accuracy -->
         <section class="panel">
             <h3 class="panel-title" data-i18n="perf-hist-title">
-                Historical Accuracy (Last 30 Days)
-                <span class="title-badge">ACTUAL vs FORECAST</span>
+                Historical Accuracy <span class="title-badge" id="history-window">ACTUAL vs FORECAST</span>
             </h3>
+            <p class="text-muted chart-explain">How to read: <span style="color:var(--status-good);font-weight:600;">green</span> is the PVGIS-modeled fleet output (the "actual"), <span style="color:#2563eb;font-weight:600;">blue</span> is the median (P50) forecast, and the amber band is the P10–P90 uncertainty interval. A healthy model tracks the green line with the band wrapping it — expect the band to contain roughly 80% of daylight hours. Night is flat at zero by design (forecasts are zeroed below 1 W/m² GHI). Use scroll/pinch to zoom into a day and inspect the bell curve.</p>
             <div class="flex-between" style="gap:1rem;flex-wrap:wrap;margin-bottom:0.75rem;">
                 <div>
                     <div id="history-meta" class="text-muted">Loading historical dataset…</div>
@@ -92,7 +93,7 @@
             <p id="daily-meta" class="text-muted" style="margin-bottom:0.75rem;">Loading daily metrics…</p>
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1rem;">
                 <div>
-                    <p class="text-muted" style="margin:0 0 0.35rem;font-size:0.82rem;">MAE &amp; nRMSE (MW) — lower is better</p>
+                    <p class="text-muted" style="margin:0 0 0.35rem;font-size:0.82rem;">MAE &amp; RMSE (MW) — lower is better</p>
                     <div class="chart-wrapper"><canvas id="dailyErrorChart"></canvas></div>
                 </div>
                 <div>
@@ -100,12 +101,14 @@
                     <div class="chart-wrapper"><canvas id="dailyCoverageChart"></canvas></div>
                 </div>
             </div>
+            <p class="text-muted chart-explain">How to read (daylight hours only): MAE is the typical hourly miss in MW; RMSE weights large misses harder, so RMSE ≫ MAE flags occasional blow-ups rather than uniform noise. Coverage is the share of hours the actual fell inside the P10–P90 band (~80% is well calibrated; ≪80% means the band is too narrow). Bias = forecast − actual: positive means systematic over-forecasting, negative under-forecasting.</p>
         </section>
 
         <!-- Training and validation performance -->
         <section class="panel">
             <h3 class="panel-title">Training vs Validation Performance <span class="title-badge">PVGIS MODEL</span></h3>
             <p id="validation-meta" class="text-muted" style="margin-bottom:0.75rem;">Loading training and validation metrics…</p>
+            <p class="text-muted chart-explain">How to read: left chart is the quantile (pinball) loss — the score the model optimizes; right chart is accuracy (100 − nRMSE) and band coverage on the same splits. Validation should be close to training: a much better training bar means overfitting, and validation coverage drifting far from 80% means the P10–P90 band is miscalibrated.</p>
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1rem;">
                 <div>
                     <p class="text-muted" style="margin:0 0 0.35rem;font-size:0.82rem;">Loss — lower is better</p>
@@ -123,6 +126,7 @@
         <section class="panel">
             <h3 class="panel-title">Training Progression <span class="title-badge">LEARNING CURVE</span></h3>
             <p id="progression-meta" class="text-muted" style="margin-bottom:0.75rem;">Loading training history…</p>
+            <p class="text-muted chart-explain">How to read: one bar per recorded training run, scored out-of-sample on future data (temporal cross-validation). Blue bars were promoted to production; grey bars stayed candidates because they did not beat the incumbent. The purple line is P10–P90 coverage — falling coverage alongside rising MAE marks a regression the promotion gate blocked.</p>
             <div class="chart-wrapper" style="height:280px;">
                 <canvas id="progressionChart"></canvas>
             </div>
@@ -170,6 +174,7 @@
             <div class="retrain-log" id="retrain-log">
                 <p style="color:var(--text-secondary);font-size:0.85rem;">No retrain events yet. Import a validated rooftop snapshot to enable hourly learning.</p>
             </div>
+            <p class="text-muted chart-explain" id="drift-chart-explain">How to read (chart below): each cluster compares the production model's MAE against naive baselines — repeating yesterday (persistence 24h), last week (168h), and the per-district hourly climatology. The model earns its place by staying clearly below the best baseline; once its error comes within 15% of the baseline, drift fires and a candidate is retrained.</p>
             <!-- Drift baseline comparison chart -->
             <div id="drift-chart-wrapper" class="chart-wrapper" style="height:260px;margin-top:1rem;display:none;">
                 <canvas id="driftBaselineChart"></canvas>

@@ -14,3 +14,8 @@ reportlab
 apscheduler
 python-dotenv
 optuna
+# Declared explicitly: both arrived transitively via optuna, and the relational
+# store in db/ now depends on them directly. Without this pin removing or
+# upgrading optuna could silently drop the database layer.
+SQLAlchemy>=2.0
+alembic

@@ -19,7 +19,7 @@ if __package__ in (None, ""):  # launched as `python <dir>/<file>.py`: add the p
 import argparse
 from pathlib import Path
 
-from data.generate_pvgis_rooftop_data import generate_pvgis_dataset
+from data.generate_pvgis_rooftop_data import generate_pvgis_dataset, write_pvgis_dataset
 from data.generate_rooftop_dataset import generate_rooftop_dataset
 from data.io import write_dataframe
 from data import paths
@@ -44,6 +44,13 @@ def main() -> None:
     parser.add_argument("--cache-dir", type=Path, default=paths.PVGIS_CACHE_DIR)
     parser.add_argument("--output", type=Path, default=paths.ROOFTOP_TRAINING_DATASET_PATH)
     args = parser.parse_args()
+
+    if args.source == "pvgis":
+        # Streamed district-by-district: the full frame may not fit in RAM.
+        rows = write_pvgis_dataset(args.start, args.end, args.output, args.cache_dir)
+        print(f"Generated {rows:,} 15-minute aggregate rows across {args.source} districts")
+        print(f"Saved {args.source} dataset: {args.output}")
+        return
 
     frame = build_dataset(args.source, args.start, args.end, args.seed, args.cache_dir)
     saved = write_dataframe(frame, args.output)
