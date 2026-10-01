@@ -23,6 +23,7 @@ from ingestion import weather_client
 from ingestion.synthetic_data import generate_all
 from models.artifacts import load_models
 from models.ml_forecast import predict
+from models.prediction_history import persist_forecast_run
 from reports.prosol_history_db import import_generated_snapshots
 
 # ── Shared application state ────────────────────────────────────────────────
@@ -35,6 +36,7 @@ _state: dict[str, Any] = {
     "refresh_lock": threading.Lock(),
     "capacity_lookup": CAPACITY_LOOKUP,
     "dust_lookup": DUST_LOOKUP,
+    "last_persisted_issue": None,
 }
 
 # ── Lazy loaders ────────────────────────────────────────────────────────────
@@ -80,7 +82,26 @@ def build_forecast(horizon_days: int = 3) -> pd.DataFrame:
         )
         _state["cache"] = forecast
         _state["cache_time"] = now
+        _persist_run(forecast, now)
         return forecast
+
+
+def _persist_run(forecast: pd.DataFrame, issued_at: pd.Timestamp) -> None:
+    """Save the issued run to the prediction history, once per issue hour.
+
+    Runs are keyed to the hour, so refreshing again within the same hour is
+    redundant; the guard keeps the request path from rewriting thousands of
+    rows every 15 minutes. Persistence never propagates — a store failure must
+    not take the forecast endpoint down.
+    """
+    stamp = issued_at.isoformat()
+    if _state["last_persisted_issue"] == stamp:
+        return
+    _state["last_persisted_issue"] = stamp
+    try:
+        persist_forecast_run(forecast, issued_at, _state["data_source"])
+    except Exception as error:  # noqa: BLE001 - serving outranks history
+        print(f"[prediction history] run persist failed: {error}")
 
 
 def get_forecast_frame(horizon_days: int = 3) -> pd.DataFrame:

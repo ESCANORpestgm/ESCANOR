@@ -7,14 +7,16 @@ storage engine stays swappable behind :func:`db.engine.get_engine`.
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Iterable, Mapping
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import pandas as pd
-from sqlalchemy import func, insert, select
+from sqlalchemy import delete, func, insert, select
 
 from db.engine import get_engine, session_scope
-from db.models import Base, MeteringObservation, RetrainingEvent
+from db.models import Base, ForecastPrediction, MeteringObservation, RetrainingEvent
 
 
 def init_db() -> None:
@@ -135,6 +137,142 @@ def read_retraining_events(limit: int | None = 50) -> list[dict[str, Any]]:
             "retrained": row.retrained,
             "candidate_promoted": row.candidate_promoted,
             "payload": json.loads(row.payload),
+        }
+        for row in rows
+    ]
+
+
+# ── Issued forecast history ──────────────────────────────────────────────────
+
+# The refresh job rebuilds the forecast every 15 minutes during daylight; runs
+# are stored keyed by the hour they were issued in, so the horizon of stored
+# rows grows by ~16 per day. Retention keeps the SQLite file bounded: runs
+# older than this many days are pruned on every write. Override with
+# ``ESCANOR_FORECAST_RETENTION_DAYS``; ``0`` disables pruning.
+DEFAULT_FORECAST_RETENTION_DAYS = 30
+
+
+def forecast_retention_days() -> int:
+    try:
+        return int(os.environ.get("ESCANOR_FORECAST_RETENTION_DAYS", DEFAULT_FORECAST_RETENTION_DAYS))
+    except ValueError:
+        return DEFAULT_FORECAST_RETENTION_DAYS
+
+
+def record_forecast_predictions(rows: Iterable[Mapping[str, Any]]) -> int:
+    """Store one issued forecast run, skipping rows already recorded.
+
+    Rows carry the flat :class:`~db.models.ForecastPrediction` fields. The write
+    is idempotent against the unique key so a cache refresh inside the same
+    issue hour cannot duplicate history. After the insert, runs older than the
+    retention window are pruned — history is an audit trail, not an archive.
+    The prune runs in its own transaction: SQLite serves one writer at a time,
+    so a nested session opened while the insert still holds the write lock
+    would time out with "database is locked".
+    """
+    payload = [
+        {
+            "issued_at": str(row["issued_at"]),
+            "level": str(row["level"]),
+            "location": str(row["location"]),
+            "target_timestamp": str(row["target_timestamp"]),
+            "forecast_p10_mw": float(row["forecast_p10_mw"]),
+            "forecast_p50_mw": float(row["forecast_p50_mw"]),
+            "forecast_p90_mw": float(row["forecast_p90_mw"]),
+            "horizon_hours": int(row.get("horizon_hours") or 0),
+            "data_source": str(row.get("data_source") or ""),
+        }
+        for row in rows
+    ]
+    if not payload:
+        return 0
+
+    with session_scope() as session:
+        statement = _insert_ignore(
+            session, payload, ForecastPrediction,
+            ["issued_at", "level", "location", "target_timestamp"],
+        )
+        if statement is not None:
+            session.execute(statement)
+    prune_forecast_history()
+    return len(payload)
+
+
+def prune_forecast_history(retention_days: int | None = None) -> int:
+    """Delete issued runs older than the retention window; returns row count."""
+    days = forecast_retention_days() if retention_days is None else retention_days
+    if days <= 0:
+        return 0
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    with session_scope() as session:
+        result = session.execute(
+            delete(ForecastPrediction).where(ForecastPrediction.issued_at < cutoff)
+        )
+    return int(result.rowcount or 0)
+
+
+def read_forecast_predictions(
+    level: str | None = None,
+    location: str | None = None,
+    since: str | None = None,
+    issued_at: str | None = None,
+) -> pd.DataFrame:
+    """Stored predictions as a DataFrame, oldest target first."""
+    statement = select(ForecastPrediction).order_by(
+        ForecastPrediction.target_timestamp, ForecastPrediction.issued_at
+    )
+    if level:
+        statement = statement.where(ForecastPrediction.level == level)
+    if location:
+        statement = statement.where(ForecastPrediction.location == location.upper())
+    if since:
+        statement = statement.where(ForecastPrediction.target_timestamp >= since)
+    if issued_at:
+        statement = statement.where(ForecastPrediction.issued_at == issued_at)
+    with session_scope() as session:
+        rows = session.execute(statement).scalars().all()
+    return pd.DataFrame(
+        [
+            {
+                "issued_at": row.issued_at,
+                "level": row.level,
+                "location": row.location,
+                "target_timestamp": row.target_timestamp,
+                "forecast_p10_mw": row.forecast_p10_mw,
+                "forecast_p50_mw": row.forecast_p50_mw,
+                "forecast_p90_mw": row.forecast_p90_mw,
+                "horizon_hours": row.horizon_hours,
+                "data_source": row.data_source,
+            }
+            for row in rows
+        ]
+    )
+
+
+def list_forecast_runs(level: str | None = None, limit: int = 60) -> list[dict[str, Any]]:
+    """Distinct issue times, newest first, with the size of each stored run."""
+    statement = (
+        select(
+            ForecastPrediction.issued_at,
+            func.count().label("rows"),
+            func.min(ForecastPrediction.target_timestamp).label("target_start"),
+            func.max(ForecastPrediction.target_timestamp).label("target_end"),
+            func.max(ForecastPrediction.data_source).label("data_source"),
+        )
+        .group_by(ForecastPrediction.issued_at)
+        .order_by(ForecastPrediction.issued_at.desc())
+    )
+    if level:
+        statement = statement.where(ForecastPrediction.level == level)
+    with session_scope() as session:
+        rows = session.execute(statement.limit(limit)).all()
+    return [
+        {
+            "issued_at": row.issued_at,
+            "rows": int(row.rows),
+            "target_start": row.target_start,
+            "target_end": row.target_end,
+            "data_source": row.data_source,
         }
         for row in rows
     ]

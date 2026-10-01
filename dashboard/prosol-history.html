@@ -73,6 +73,36 @@
             </section>
             <section class="panel">
                 <div class="flex-between performance-toolbar" style="gap:1rem;flex-wrap:wrap;">
+                    <h3 class="panel-title" data-i18n="pv-ledger-title">Live PV update ledger <span class="title-badge">CRUD</span></h3>
+                    <span id="pv-ledger-count" class="text-muted"></span>
+                </div>
+                <p class="text-muted" data-i18n="pv-ledger-note">Every connection added on top of the snapshot. Edit a mis-keyed entry, reverse it (keeps the audit trail) or delete it outright — district totals recompute immediately.</p>
+                <div class="table-scroll"><table class="data-table" id="pv-ledger-table"></table></div>
+            </section>
+            <section class="panel">
+                <div class="history-toolbar" style="flex-wrap:wrap;gap:1rem;margin-bottom:1rem;">
+                    <h3 class="panel-title" data-i18n="pred-history-title" style="width:100%;">Saved prediction history</h3>
+                    <label data-i18n="pred-level">Level
+                        <select id="pred-level" class="history-select">
+                            <option value="national" data-i18n="pred-level-national">National</option>
+                            <option value="direction" data-i18n="pred-level-direction">Direction</option>
+                            <option value="steg_district" data-i18n="pred-level-district">District</option>
+                        </select>
+                    </label>
+                    <label id="pred-location-wrap" data-i18n="pred-location" hidden>Location
+                        <select id="pred-location" class="history-select"></select>
+                    </label>
+                    <label data-i18n="pred-run">Issued run
+                        <select id="pred-run" class="history-select"><option data-i18n="loading">Loading…</option></select>
+                    </label>
+                    <a id="pred-csv" class="btn btn-secondary" download data-i18n="download-csv">Download CSV</a>
+                </div>
+                <p id="pred-meta" class="text-muted"></p>
+                <div class="chart-wrapper"><canvas id="predictionHistoryChart"></canvas></div>
+                <div class="table-scroll" style="max-height:320px;"><table class="data-table" id="pred-run-table"></table></div>
+            </section>
+            <section class="panel">
+                <div class="flex-between performance-toolbar" style="gap:1rem;flex-wrap:wrap;">
                     <h3 class="panel-title" data-i18n="new-installed-pvs">New installed PVs by district <span class="title-badge">CSV EXPORT</span></h3>
                     <a id="new-installations-csv" class="btn btn-secondary" download data-i18n="download-csv">Download CSV</a>
                 </div>

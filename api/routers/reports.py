@@ -32,7 +32,11 @@ from reports.prosol_updates import (
     CAPACITY_DECIMALS,
     add_installation_update,
     aggregate_updates,
+    delete_installation_update,
+    get_installation_update,
     list_installation_updates,
+    reverse_installation_update,
+    update_installation_update,
 )
 
 router = APIRouter(tags=["STEG Prosol"])
@@ -90,6 +94,42 @@ def add_prosol_installation_update(payload: dict[str, Any]):
         return add_installation_update(payload)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
+
+
+@router.put("/reports/prosol/updates/{update_id}", tags=["STEG Prosol History"])
+def edit_prosol_installation_update(update_id: str, payload: dict[str, Any]):
+    """Correct a stored live installation update in place."""
+    try:
+        return update_installation_update(update_id, payload)
+    except KeyError as exc:
+        raise HTTPException(404, "Installation update not found") from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@router.post("/reports/prosol/updates/{update_id}/reverse", tags=["STEG Prosol History"])
+def reverse_prosol_installation_update(update_id: str):
+    """Net an update out with a reversal entry, keeping the original on record."""
+    try:
+        return reverse_installation_update(update_id)
+    except KeyError as exc:
+        raise HTTPException(404, "Installation update not found") from exc
+
+
+@router.delete("/reports/prosol/updates/{update_id}", tags=["STEG Prosol History"])
+def remove_prosol_installation_update(update_id: str):
+    """Delete one live installation update; totals re-aggregate immediately."""
+    if not delete_installation_update(update_id):
+        raise HTTPException(404, "Installation update not found")
+    return {"deleted": update_id, "totals_by_district": aggregate_updates()}
+
+
+@router.get("/reports/prosol/updates/{update_id}", tags=["STEG Prosol History"])
+def prosol_installation_update_detail(update_id: str):
+    update = get_installation_update(update_id)
+    if update is None:
+        raise HTTPException(404, "Installation update not found")
+    return update
 
 
 @router.get("/reports/prosol/history/{snapshot_id}/new-installations.csv", response_class=PlainTextResponse, tags=["STEG Prosol History"])

@@ -13,10 +13,12 @@ from __future__ import annotations
 from db.engine import dispose_engine, get_engine, session_scope
 from db.models import (
     Base,
+    ForecastPrediction,
     MeteringObservation,
     ProsolDirection,
     ProsolDistrict,
     ProsolInstallationSize,
+    ProsolInstallationUpdate,
     ProsolNationalMetric,
     ProsolPendingDossier,
     ProsolReport,
@@ -24,8 +26,12 @@ from db.models import (
 )
 from db.repository import (
     init_db,
+    list_forecast_runs,
+    prune_forecast_history,
+    read_forecast_predictions,
     read_metering_frame,
     read_retraining_events,
+    record_forecast_predictions,
     record_metering_observations,
     record_retraining_event,
     storage_overview,
@@ -33,10 +39,12 @@ from db.repository import (
 
 __all__ = [
     "Base",
+    "ForecastPrediction",
     "MeteringObservation",
     "ProsolDirection",
     "ProsolDistrict",
     "ProsolInstallationSize",
+    "ProsolInstallationUpdate",
     "ProsolNationalMetric",
     "ProsolPendingDossier",
     "ProsolReport",
@@ -44,8 +52,12 @@ __all__ = [
     "dispose_engine",
     "get_engine",
     "init_db",
+    "list_forecast_runs",
+    "prune_forecast_history",
+    "read_forecast_predictions",
     "read_metering_frame",
     "read_retraining_events",
+    "record_forecast_predictions",
     "record_metering_observations",
     "record_retraining_event",
     "session_scope",

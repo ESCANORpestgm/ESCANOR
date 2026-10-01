@@ -1,5 +1,7 @@
 """Forecast query endpoints — national, direction, district, and governorate."""
 
+from datetime import datetime, timedelta, timezone
+
 import pandas as pd
 from fastapi import APIRouter, HTTPException, Security
 
@@ -7,6 +9,7 @@ from api.config import DISTRICT_CAPACITY_LOOKUP, require_api_key
 from api.services import compute_bias_correction, get_forecast_frame, _state
 from data.steg_districts import DISTRICT_BY_NAME, DIRECTIONS
 from models.aggregation import aggregate
+from models.prediction_history import available_runs, load_history
 
 router = APIRouter(prefix="/forecast", tags=["Forecast"])
 
@@ -134,3 +137,46 @@ def force_refresh(_key: str = Security(require_api_key)):
     _state["cache_time"] = None
     forecast = get_forecast_frame(3)
     return {"refreshed": True, "data_source": _state["data_source"], "rows": len(forecast), "cache_time": str(_state["cache_time"])}
+
+
+# ── Prediction history (issued runs persisted to the relational store) ───────
+
+
+@router.get("/history/runs", tags=["Prediction History"])
+def prediction_history_runs():
+    """Every issued forecast run on record, newest first."""
+    return {"runs": available_runs()}
+
+
+@router.get("/history", tags=["Prediction History"])
+def prediction_history(
+    level: str = "national",
+    location: str | None = None,
+    issued_at: str | None = None,
+    days: int = 4,
+):
+    """Stored P10/P50/P90 predictions for a level/location over recent targets.
+
+    ``level`` is one of national/direction/steg_district; ``location`` narrows a
+    direction or district (ignored for national); ``issued_at`` pins a single
+    run so the dashboard can replay what was forecast as of that hour.
+    """
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    frame = load_history(
+        level=level,
+        location=None if level == "national" else location,
+        issued_at=issued_at,
+        since=since,
+    )
+    if frame.empty:
+        return {"level": level, "location": location, "issued_at": issued_at, "data": []}
+    frame = frame.copy()
+    frame["target_timestamp"] = frame["target_timestamp"].astype(str)
+    frame["issued_at"] = frame["issued_at"].astype(str)
+    return {
+        "level": level,
+        "location": "NATIONAL" if level == "national" else (location or "ALL"),
+        "issued_at": issued_at,
+        "runs": sorted(frame["issued_at"].unique().tolist()),
+        "data": frame.to_dict(orient="records"),
+    }

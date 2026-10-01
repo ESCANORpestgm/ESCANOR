@@ -177,3 +177,82 @@ class ProsolPendingDossier(_ProsolPayloadRow, Base):
     """One pending-dossier row of a snapshot."""
 
     __tablename__ = "prosol_pending_dossiers"
+
+
+class ProsolInstallationUpdate(Base):
+    """One live rooftop-PV addition layered over the immutable snapshots.
+
+    A Prosol report only moves monthly, so connections approved in between are
+    recorded here. They used to be an append-only JSONL journal, which made a
+    mis-keyed entry permanent; as a table row the dashboard can correct or
+    delete a single update. ``recorded_at`` stays the original stamp and
+    ``amended_at`` records an edit, so the audit trail survives the change.
+    Negative counts are allowed: they are how a reversal entry reduces a
+    district's live total without deleting the original record.
+    """
+
+    __tablename__ = "prosol_installation_updates"
+    __table_args__ = (
+        Index("idx_prosol_updates_district", "district"),
+        Index("idx_prosol_updates_period", "report_period"),
+    )
+
+    update_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    recorded_at: Mapped[str] = mapped_column(String(32))
+    amended_at: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    report_period: Mapped[str] = mapped_column(String(16))
+    district: Mapped[str] = mapped_column(String(64))
+    direction: Mapped[str] = mapped_column(String(64), default="")
+    new_installations: Mapped[int] = mapped_column(Integer)
+    installed_capacity_kwp: Mapped[float] = mapped_column(Float)
+    source: Mapped[str] = mapped_column(String(64), default="")
+    notes: Mapped[str] = mapped_column(Text, default="")
+
+    def __repr__(self) -> str:  # pragma: no cover - diagnostics only
+        return (
+            f"<ProsolInstallationUpdate {self.update_id} {self.district} "
+            f"n={self.new_installations}>"
+        )
+
+
+# ── Issued forecast history ──────────────────────────────────────────────────
+
+class ForecastPrediction(Base):
+    """One issued P10/P50/P90 forecast value, kept to reconstruct history.
+
+    The live API serves forecasts from a short-lived in-memory cache, so without
+    this table there is no record of *what was predicted for a given target hour
+    at the time it was issued*. ``issued_at`` stamps the run that produced the
+    value (floored to the hour in ``api.services``), ``target_timestamp`` is the
+    hour being forecast, and the ``(issued_at, level, location, target_timestamp)``
+    unique key makes a replayed run idempotent — the same hour refreshed twice
+    stores one row.
+    """
+
+    __tablename__ = "forecast_predictions"
+    __table_args__ = (
+        CheckConstraint("forecast_p50_mw >= 0", name="ck_forecast_p50_non_negative"),
+        UniqueConstraint(
+            "issued_at", "level", "location", "target_timestamp",
+            name="uq_forecast_issue_level_location_target",
+        ),
+        Index("idx_forecast_target", "target_timestamp"),
+        Index("idx_forecast_issued", "issued_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    issued_at: Mapped[str] = mapped_column(String(32))
+    level: Mapped[str] = mapped_column(String(16))
+    location: Mapped[str] = mapped_column(String(64))
+    target_timestamp: Mapped[str] = mapped_column(String(32))
+    forecast_p10_mw: Mapped[float] = mapped_column(Float)
+    forecast_p50_mw: Mapped[float] = mapped_column(Float)
+    forecast_p90_mw: Mapped[float] = mapped_column(Float)
+    horizon_hours: Mapped[int] = mapped_column(Integer, default=0)
+    data_source: Mapped[str] = mapped_column(String(16), default="")
+
+    def __repr__(self) -> str:  # pragma: no cover - diagnostics only
+        return (
+            f"<ForecastPrediction {self.issued_at} {self.level}:{self.location} "
+            f"target={self.target_timestamp} p50={self.forecast_p50_mw}>"
+        )

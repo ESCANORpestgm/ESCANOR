@@ -306,6 +306,30 @@ body {
     background: var(--bg-surface);
     color: var(--text-primary);
 }
+
+/* ── Live PV update ledger (inline CRUD) ─────────────────────────────────── */
+.ledger-actions { white-space: nowrap; text-align: right; }
+html[dir="rtl"] .ledger-actions { text-align: left; }
+.btn-tiny { padding: 0.28rem 0.55rem; font-size: 0.72rem; border-radius: 6px; margin-inline: 0.12rem; }
+.btn-danger { color: var(--status-bad); border-color: var(--status-bad); }
+.btn-danger:hover { background: rgba(200, 60, 60, 0.08); border-color: var(--status-bad); }
+.data-table .ledger-editing td { background: var(--accent-light); }
+.ledger-editing input,
+.ledger-editing select {
+    width: 100%;
+    min-width: 90px;
+    padding: 0.35rem 0.45rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+}
+.history-toolbar label { display: flex; flex-direction: column; gap: 0.3rem; }
+/* The rule above out-specifies the UA's [hidden] { display: none }, so a
+   toolbar label hidden at the national level would still render. */
+.history-toolbar label[hidden] { display: none; }
 .history-empty {
     padding: 1rem 0 0.25rem;
     color: var(--text-secondary);
