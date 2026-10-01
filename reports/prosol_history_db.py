@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
 
 from data.paths import DATABASE_PATH, PROSOL_SNAPSHOT_DIR
 from data.prosol_report_schema import SNAPSHOT_SCOPE
@@ -49,6 +49,15 @@ SNAPSHOT_GLOB = "prosol_*.json"
 # Comparison files are derived from snapshots and must not be imported as such
 COMPARISON_SUFFIX = "_comparison.json"
 
+# The identity covers the official figures only. ``reconciliation`` is the check
+# the importer runs *over* those figures and ``source_file`` is the name the
+# export arrived under; both changed between importer versions and between the
+# two March-2026 exports without a single reported number changing, and hashing
+# them minted a fresh address for identical content. The history then offered
+# several entries labelled "2026-03 — prosol_mars_2026_2.txt" that no reader
+# could tell apart.
+IDENTITY_EXCLUDED_KEYS = frozenset({"reconciliation", "source_file"})
+
 # Payload array -> child model. Mirrors the arrays that were spread into the
 # four payload tables of the legacy schema.
 CHILD_MODELS: dict[str, type] = {
@@ -57,6 +66,10 @@ CHILD_MODELS: dict[str, type] = {
     "installation_sizes": ProsolInstallationSize,
     "pending_dossiers": ProsolPendingDossier,
 }
+
+# Every table a snapshot row owns, parent first: the dedupe sweep below re-points
+# and removes them as one unit.
+SNAPSHOT_TABLES: tuple[type, ...] = (ProsolReport, ProsolNationalMetric, *CHILD_MODELS.values())
 
 
 def connect():
@@ -90,7 +103,8 @@ def _number(value: Any) -> float | None:
 
 
 def _snapshot_id(payload: dict[str, Any]) -> str:
-    canonical = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    core = {key: value for key, value in payload.items() if key not in IDENTITY_EXCLUDED_KEYS}
+    canonical = json.dumps(core, sort_keys=True, ensure_ascii=False).encode("utf-8")
     return SNAPSHOT_ID_PREFIX + hashlib.sha256(canonical).hexdigest()[:SNAPSHOT_ID_LENGTH]
 
 
@@ -156,17 +170,105 @@ def import_snapshot(snapshot_path: Path, db_path: Path | None = None) -> tuple[s
     return snapshot_id, True
 
 
+def _delete_snapshot(session, snapshot_id: str) -> None:
+    """Remove one snapshot and every row it owns (children first, then the parent)."""
+    for model in reversed(SNAPSHOT_TABLES):
+        session.execute(delete(model).where(model.snapshot_id == snapshot_id))
+
+
+def _rekey_snapshot(session, old_id: str, new_id: str) -> None:
+    """Move a snapshot and its children onto a different address."""
+    for model in SNAPSHOT_TABLES:
+        session.execute(update(model).where(model.snapshot_id == old_id).values(snapshot_id=new_id))
+
+
+# The sweep is idempotent and only ever corrects historical rows, so one pass per
+# process is enough — the history endpoint would otherwise re-parse every stored
+# payload on each request.
+_dedupe_applied = False
+
+
+def dedupe_snapshots() -> dict[str, int]:
+    """Collapse stored rows that hold the same official figures under two addresses.
+
+    Snapshot addresses used to cover the whole payload, including the derived
+    ``reconciliation`` block and the export filename, so an importer upgrade or a
+    second export of the same month produced a second immutable snapshot of
+    identical numbers. Every stored row is re-addressed with the content rule and
+    one canonical row per content is kept: the row that already carries the right
+    address, otherwise the one with the most complete reconciliation block, then
+    the freshest import.
+    """
+    global _dedupe_applied
+    initialize()
+
+    # Read and write in separate transactions: the store is single-writer SQLite,
+    # so a second writer opened while this one runs would block on its own lock.
+    with session_scope() as session:
+        stored = session.execute(
+            select(ProsolReport.snapshot_id, ProsolReport.imported_at, ProsolReport.snapshot_json)
+        ).all()
+
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for snapshot_id, imported_at, snapshot_json in stored:
+        try:
+            payload = json.loads(snapshot_json)
+        except json.JSONDecodeError:
+            # A row that cannot be parsed has no computable content address; it is
+            # reported rather than removed, so the sweep never destroys evidence.
+            print(f"[prosol history] snapshot {snapshot_id} is not valid JSON; left as stored")
+            continue
+        groups.setdefault(_snapshot_id(payload), []).append({
+            "snapshot_id": snapshot_id,
+            "imported_at": imported_at,
+            "reconciliation_fields": len(payload.get("reconciliation") or {}),
+        })
+
+    summary = {"rekeyed": 0, "removed": 0}
+    with session_scope() as session:
+        for address, members in groups.items():
+            if len(members) == 1 and members[0]["snapshot_id"] == address:
+                continue
+            members.sort(
+                key=lambda row: (
+                    row["snapshot_id"] == address,
+                    row["reconciliation_fields"],
+                    row["imported_at"],
+                    row["snapshot_id"],
+                ),
+                reverse=True,
+            )
+            for loser in members[1:]:
+                _delete_snapshot(session, loser["snapshot_id"])
+                summary["removed"] += 1
+            keeper = members[0]["snapshot_id"]
+            if keeper != address:
+                _rekey_snapshot(session, keeper, address)
+                summary["rekeyed"] += 1
+    return summary
+
+
 def import_generated_snapshots(
     snapshot_dir: Path = DEFAULT_SNAPSHOT_DIR,
     db_path: Path | None = None,
 ) -> list[dict[str, Any]]:
+    global _dedupe_applied
     initialize()
     results = []
-    for snapshot_path in sorted(Path(snapshot_dir).glob(SNAPSHOT_GLOB)):
-        if snapshot_path.name.endswith(COMPARISON_SUFFIX):
-            continue
+    paths = [path for path in Path(snapshot_dir).glob(SNAPSHOT_GLOB) if not path.name.endswith(COMPARISON_SUFFIX)]
+    # Newest export first: when the same month arrives under several filenames the
+    # one that wins the address is the provenance the operator just imported.
+    for snapshot_path in sorted(paths, key=lambda path: (path.stat().st_mtime, path.name), reverse=True):
         snapshot_id, inserted = import_snapshot(snapshot_path)
         results.append({"snapshot_id": snapshot_id, "source": snapshot_path.name, "inserted": inserted})
+    if not _dedupe_applied:
+        summary = dedupe_snapshots()
+        _dedupe_applied = True
+        if summary["removed"] or summary["rekeyed"]:
+            print(
+                f"[prosol history] collapsed {summary['removed']} duplicate snapshot row(s), "
+                f"re-addressed {summary['rekeyed']}"
+            )
     return results
 
 
@@ -215,3 +317,17 @@ def get_report(snapshot_id: str, db_path: Path | None = None) -> dict[str, Any] 
         "reconciliation_passed": bool(passed),
     }
     return payload
+
+
+def latest_report(db_path: Path | None = None) -> dict[str, Any] | None:
+    """The payload of the current official report, or ``None`` when none is stored.
+
+    ``list_reports`` already orders the history newest period first, then newest
+    emission and import, so its head row is the report the platform stands on
+    today. This is what the HTML report and the summary metrics read, so a newly
+    imported month reaches the printed report without a filename being edited.
+    """
+    reports = list_reports()
+    if not reports:
+        return None
+    return get_report(reports[0]["snapshot_id"])

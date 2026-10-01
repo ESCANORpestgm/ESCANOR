@@ -17,6 +17,7 @@ from reports.prosol_history_db import (
     get_report as get_prosol_history_report,
     import_generated_snapshots,
     import_snapshot,
+    latest_report as get_prosol_history_report_latest,
     list_reports as list_prosol_history_reports,
 )
 from reports.prosol_installation_export import (
@@ -49,10 +50,17 @@ def prosol_summary_metrics():
 
 @router.get("/reports/prosol/snapshot")
 def prosol_report_snapshot():
-    path = DEFAULT_SNAPSHOT_PATH
-    if not path.exists():
+    """The current official snapshot the report is built from.
+
+    Served from the store like the history and the summary, so the three cannot
+    disagree; the legacy JSON file is only consulted while the store is empty.
+    """
+    snapshot = get_prosol_history_report_latest()
+    if snapshot is None and DEFAULT_SNAPSHOT_PATH.exists():
+        snapshot = json.loads(DEFAULT_SNAPSHOT_PATH.read_text(encoding="utf-8"))
+    if snapshot is None:
         raise HTTPException(404, "No imported Prosol snapshot found — run the report importer first.")
-    return json.loads(path.read_text(encoding="utf-8"))
+    return snapshot
 
 
 @router.get("/reports/prosol/html", response_class=HTMLResponse)

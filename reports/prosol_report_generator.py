@@ -1,11 +1,12 @@
 """Official STEG "Tableau de Bord Programme Prosol": metrics payload and print report.
 
-Source of truth is the JSON snapshot produced by
-``reports.prosol_report_importer`` from the official PDF; when none has been
-imported yet the module falls back to the March-2026 figures kept in
+Source of truth is the current snapshot in the relational store (imported from the
+official PDF by ``reports.prosol_report_importer`` and archived by
+``reports.prosol_history_db``). Only when the store is empty does the module fall
+back to the legacy snapshot file and then to the March-2026 figures kept in
 ``prosol_fallback_snapshot``. On top of whichever base applies, the validated
-append-only installation updates of ``reports.prosol_updates`` are overlaid, so
-the report always reflects the latest approved connections.
+installation ledger of ``reports.prosol_updates`` is overlaid, so the report always
+reflects the latest approved connections.
 
 Produces:
 - ``get_prosol_summary_metrics()`` — the eight canonical indicators (dashboard JSON)
@@ -34,6 +35,7 @@ from reports.prosol_fallback_snapshot import (
     DIRECTION_TUTELLE,
     build_fallback_summary,
 )
+from reports.prosol_history_db import latest_report
 from reports.prosol_report_template import (
     DIRECTION_TABLE_START,
     EXECUTION_TABLE_START,
@@ -49,8 +51,9 @@ from reports.prosol_report_template import (
 )
 from reports.prosol_updates import aggregate_updates
 
-# Snapshot imported by reports.prosol_report_importer; None falls back to the
-# hardcoded March-2026 figures.
+# Snapshot imported by reports.prosol_report_importer. Only a legacy fallback: the
+# report is built from the snapshot in the store, and this file is consulted when
+# the store is empty (``None`` then falls back to the hardcoded March-2026 figures).
 DEFAULT_SNAPSHOT_PATH = PROSOL_SNAPSHOT_DIR / "prosol_mars_2026.json"
 # Section 1.1 of the official report lists exactly these eight indicators, in order
 MIN_NATIONAL_ROWS = 8
@@ -74,13 +77,44 @@ def _indicator_map(summary: dict[str, Any]) -> dict[int, dict[str, Any]]:
     return {indicator["id"]: indicator for indicator in summary.get("indicators", [])}
 
 
+def _pending_totals(snapshot: dict[str, Any]) -> dict[str, Any]:
+    """National pending-dossier totals, summed from the district table if absent.
+
+    The importer records them inside its ``reconciliation`` block, but that block
+    is derived verification and not every snapshot carries it; the district rows
+    it was checked against are the report itself, so they can always answer.
+    """
+    reported = (snapshot.get("reconciliation") or {}).get("pending_dossiers")
+    if isinstance(reported, dict) and reported.get("current_year_to_date") is not None:
+        return {"current_year_to_date": reported["current_year_to_date"]}
+    return {
+        "current_year_to_date": sum(
+            int(row.get("current_year_to_date") or 0) for row in snapshot.get("pending_dossiers", [])
+        )
+    }
+
+
+def _file_snapshot(path: Path) -> dict[str, Any] | None:
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+
+
 def _load_imported_summary(snapshot_path: str | Path | None = None) -> dict[str, Any] | None:
-    """Load a normalized Prosol snapshot, or ``None`` when none was imported."""
-    path = Path(snapshot_path) if snapshot_path else DEFAULT_SNAPSHOT_PATH
-    if not path.exists():
+    """Load the current normalized Prosol snapshot, or ``None`` when none exists.
+
+    The store is the source of truth: reading one fixed JSON filename instead kept
+    printing the March-2026 report after later months had been imported, and fell
+    back to hardcoded figures in silence as soon as that file moved. An explicit
+    ``snapshot_path`` still wins, so the comparison tooling can render any file.
+    """
+    if snapshot_path:
+        snapshot = _file_snapshot(Path(snapshot_path))
+        if snapshot is None:
+            raise FileNotFoundError(f"Prosol snapshot not found: {snapshot_path}")
+    else:
+        snapshot = latest_report() or _file_snapshot(DEFAULT_SNAPSHOT_PATH)
+    if snapshot is None:
         return None
 
-    snapshot = json.loads(path.read_text(encoding="utf-8"))
     rows = snapshot.get("national_rows", [])
     if len(rows) < MIN_NATIONAL_ROWS:
         raise ValueError("Imported Prosol snapshot is missing national PV metrics")
@@ -103,26 +137,27 @@ def _load_imported_summary(snapshot_path: str | Path | None = None) -> dict[str,
     ]
 
     installations = indicators[INDICATOR_INSTALLATIONS - 1]
-    pending = snapshot["reconciliation"]["pending_dossiers"]
+    pending = _pending_totals(snapshot)
+    executed = installations["ytd_current"]
+    pending_current = pending["current_year_to_date"]
     return {
         "report_period": snapshot["report_period"],
         "emission_date": snapshot["emission_date"],
         "source_file": snapshot["source_file"],
+        "snapshot_id": snapshot.get("snapshot_id"),
         "direction_tutelle": DIRECTION_TUTELLE,
         "recap_executions": {
             "period": snapshot["report_period"],
-            "executes_current": installations["ytd_current"],
+            "executes_current": executed,
             "executes_prev": installations["ytd_prev"],
             "executes_var_pct": installations["ytd_var"],
-            "pending_current": pending["current_year_to_date"],
+            "pending_current": pending_current,
             "pending_prev": PENDING_PREV_BASELINE,
             "pending_var_pct": PENDING_VAR_BASELINE_PCT,
             "completion_rate_pct": round(
-                installations["ytd_current"]
-                / (installations["ytd_current"] + pending["current_year_to_date"])
-                * PERCENT,
+                executed / (executed + pending_current) * PERCENT,
                 COMPLETION_RATE_DECIMALS,
-            ),
+            ) if (executed + pending_current) else 0,
         },
         "indicators": indicators,
         # District velocity rankings are not part of the parsed national tables
@@ -142,7 +177,7 @@ def _overlay_indicator(indicator: dict[str, Any], delta: float) -> None:
 
 
 def _apply_live_installation_updates(summary: dict[str, Any]) -> dict[str, Any]:
-    """Overlay validated append-only installation updates on the current report."""
+    """Overlay the validated installation ledger on the current report."""
     updates = aggregate_updates()
     live_sites = sum(int(row.get("new_installations", 0)) for row in updates.values())
     live_capacity_mw = sum(float(row.get("installed_capacity_kwp", 0)) for row in updates.values()) / KW_PER_MW
