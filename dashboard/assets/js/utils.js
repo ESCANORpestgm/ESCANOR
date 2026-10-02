@@ -3,7 +3,29 @@
    Design tokens, Chart.js helpers, API constants, status poller
    ============================================================ */
 
-const API_BASE = 'http://localhost:8000';
+// ── Where the API lives ──────────────────────────────────────────────────────
+// Single definition on purpose: every call in every module is `${API_BASE}/path`,
+// so this is the only place that decides the address.
+//
+// Empty string means *same origin* — relative URLs. That is what makes the page
+// work on any host without editing anything: the FastAPI app serves the dashboard
+// under /dashboard/, and a Cloudflare quick tunnel whose address changes on every
+// restart needs no configuration at all, because the browser resolves the calls
+// against whatever URL the page itself was opened from.
+//
+// The local origin is only used when the page is demonstrably served by something
+// other than the API: a standalone static server (Live Server on :5501, python
+// http.server on :3000/:8081) or a file:// open, where relative URLs could never
+// reach a server. Change API_PORT if the backend runs on a different port.
+const API_PORT = '8000';
+const LOCAL_API_ORIGIN = `http://127.0.0.1:${API_PORT}`;
+
+const API_BASE = (() => {
+    const { protocol, port } = window.location;
+    if (protocol !== 'http:' && protocol !== 'https:') return LOCAL_API_ORIGIN;
+    if (port === '' || port === API_PORT) return '';
+    return LOCAL_API_ORIGIN;
+})();
 
 // ── Design tokens ───────────────────────────────────────────────────────────
 
